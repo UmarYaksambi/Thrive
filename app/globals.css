@@ -1,0 +1,70 @@
+@import url('https://fonts.googleapis.com/css2?family=Kodchasan:wght@300;400;600;700&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --dark-charcoal: #151313;
+    --coral: #ff5734;
+    --purple: #be94f5;
+    --yellow: #fccc42;
+    --off-white: #f7f7f5;
+
+    --background: 0 0% 97%;
+    --foreground: 0 0% 8%;
+    --card: 0 0% 100%;
+    --card-foreground: 0 0% 8%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 0 0% 8%;
+    --primary: 12 100% 60%;
+    --primary-foreground: 0 0% 98%;
+    --secondary: 45 97% 63%;
+    --secondary-foreground: 0 0% 8%;
+    --muted: 0 0% 96%;
+    --muted-foreground: 0 0% 45%;
+    --accent: 266 68% 76%;
+    --accent-foreground: 0 0% 8%;
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 0 0% 98%;
+    --border: 0 0% 90%;
+    --input: 0 0% 90%;
+    --ring: 12 100% 60%;
+    --radius: 1.5rem;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-[#f7f7f5] text-[#151313];
+    font-family: 'Kodchasan', sans-serif;
+  }
+  h1, h2, h3, h4, h5, h6 {
+    font-family: 'Kodchasan', sans-serif;
+  }
+}
+
+@layer utilities {
+  .learnify-yellow {
+    background-color: #fccc42;
+  }
+  .learnify-purple {
+    background-color: #be94f5;
+  }
+  .learnify-coral {
+    background-color: #ff5734;
+  }
+  .learnify-dark {
+    background-color: #151313;
+  }
+  .learnify-blue {
+    background-color: #a8d8ea;
+  }
+  .learnify-card {
+    @apply rounded-3xl shadow-sm;
+  }
+}
