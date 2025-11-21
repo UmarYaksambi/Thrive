@@ -2,24 +2,32 @@ import Link from 'next/link';
 import { Search, BookOpen, Brain, Users, Award } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 
+import { Anton } from "next/font/google";
+
+const anton = Anton({
+  subsets: ["latin"],
+  weight: "400",
+});
+
+
 export default function LandingPage() {
   return (
-    <div className="min-h-screen bg-gradient-to-br from-[#f7f7f5] via-[#fef9f3] to-[#f5f3fe]">
+  <div className="min-h-screen bg-gradient-to-br from-[#f7f7f5] via-[#fef9f3] to-[#f5f3fe] bg-[linear-gradient(90deg,#e5d6ff40_1px,transparent_1px),linear-gradient(#e5d6ff40_1px,transparent_1px)] bg-[size:34px_34px]">
       <nav className="p-6 flex items-center justify-between max-w-7xl mx-auto">
         <h1 className="text-3xl font-bold">
-          <span className="text-[#fccc42]">Th</span>
+          <span className="text-[#D8C4FB]">Th</span>
           <span className="text-[#151313]">rive</span>
         </h1>
         <div className="flex items-center gap-4">
           <Link
             href="/dashboard"
-            className="px-6 py-2.5 text-[#151313] font-semibold hover:text-[#fccc42] transition-colors"
+            className="px-6 py-2.5 text-[#151313] font-semibold hover:text-[#C2AAFB] transition-colors"
           >
             Sign In
           </Link>
           <Link
             href="/dashboard"
-            className="px-6 py-2.5 bg-[#fccc42] text-[#151313] font-semibold rounded-full hover:bg-[#f4b91a] transition-colors"
+            className="px-6 py-2.5 bg-[#D8C4FB] text-[#151313] font-semibold rounded-full hover:bg-[#C2AAFB] transition-colors"
           >
             Get Started
           </Link>
@@ -28,10 +36,12 @@ export default function LandingPage() {
 
       <main className="max-w-7xl mx-auto px-6 py-20">
         <div className="text-center mb-16">
-          <h2 className="text-6xl font-bold text-[#151313] mb-6 leading-tight">
+          <h2 className={`${anton.className} text-6xl font-bold text-[#151313] mb-6 leading-tight`}>
             Your Personalized
             <br />
-            <span className="text-[#fccc42]">Learning Journey</span>
+            <span className="text-[#D8C4FB] text-8xl tracking-[-0.04em] leading-none">
+              Learning Journey
+            </span>
             <br />
             Starts Here
           </h2>
@@ -44,9 +54,9 @@ export default function LandingPage() {
               <Search className="absolute left-6 top-1/2 -translate-y-1/2 w-6 h-6 text-gray-400" />
               <Input
                 placeholder="What do you want to learn today?"
-                className="pl-16 h-16 rounded-full border-2 border-gray-200 focus:border-[#fccc42] bg-white text-lg shadow-lg"
+                className="pl-16 h-16 rounded-full border-2 border-gray-200 focus:border-[#C2AAFB] bg-white text-lg shadow-lg"
               />
-              <button className="absolute right-3 top-1/2 -translate-y-1/2 px-8 py-3 bg-[#fccc42] text-[#151313] font-semibold rounded-full hover:bg-[#f4b91a] transition-colors">
+              <button className="absolute right-3 top-1/2 -translate-y-1/2 px-8 py-3 bg-[#D8C4FB] text-[#151313] font-semibold rounded-full hover:bg-[#C2AAFB] transition-colors">
                 Search
               </button>
             </div>
@@ -114,7 +124,7 @@ export default function LandingPage() {
           </h3>
           <Link
             href="/dashboard"
-            className="inline-block px-12 py-4 bg-[#fccc42] text-[#151313] text-xl font-bold rounded-full hover:bg-[#f4b91a] transition-colors shadow-lg hover:shadow-xl"
+            className="inline-block px-12 py-4 bg-[#D8C4FB] text-[#151313] text-xl font-bold rounded-full hover:bg-[#C2AAFB] transition-colors shadow-lg hover:shadow-xl"
           >
             Start Learning Now
           </Link>
