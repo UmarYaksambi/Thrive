@@ -2,7 +2,7 @@ import './globals.css';
 import type { Metadata } from 'next';
 
 export const metadata: Metadata = {
-  title: 'Learnify - Personalized Learning Platform',
+  title: 'Thrive - Personalized Learning Platform',
   description: 'Your personalized learning companion with AI-powered tutoring and progress tracking',
 };
 

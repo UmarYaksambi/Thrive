@@ -7,19 +7,19 @@ export default function LandingPage() {
     <div className="min-h-screen bg-gradient-to-br from-[#f7f7f5] via-[#fef9f3] to-[#f5f3fe]">
       <nav className="p-6 flex items-center justify-between max-w-7xl mx-auto">
         <h1 className="text-3xl font-bold">
-          <span className="text-[#ff5734]">Learn</span>
-          <span className="text-[#151313]">ify</span>
+          <span className="text-[#fccc42]">Th</span>
+          <span className="text-[#151313]">rive</span>
         </h1>
         <div className="flex items-center gap-4">
           <Link
             href="/dashboard"
-            className="px-6 py-2.5 text-[#151313] font-semibold hover:text-[#ff5734] transition-colors"
+            className="px-6 py-2.5 text-[#151313] font-semibold hover:text-[#fccc42] transition-colors"
           >
             Sign In
           </Link>
           <Link
             href="/dashboard"
-            className="px-6 py-2.5 bg-[#ff5734] text-white font-semibold rounded-full hover:bg-[#e64d2d] transition-colors"
+            className="px-6 py-2.5 bg-[#fccc42] text-[#151313] font-semibold rounded-full hover:bg-[#f4b91a] transition-colors"
           >
             Get Started
           </Link>
@@ -31,7 +31,7 @@ export default function LandingPage() {
           <h2 className="text-6xl font-bold text-[#151313] mb-6 leading-tight">
             Your Personalized
             <br />
-            <span className="text-[#ff5734]">Learning Journey</span>
+            <span className="text-[#fccc42]">Learning Journey</span>
             <br />
             Starts Here
           </h2>
@@ -44,9 +44,9 @@ export default function LandingPage() {
               <Search className="absolute left-6 top-1/2 -translate-y-1/2 w-6 h-6 text-gray-400" />
               <Input
                 placeholder="What do you want to learn today?"
-                className="pl-16 h-16 rounded-full border-2 border-gray-200 focus:border-[#ff5734] bg-white text-lg shadow-lg"
+                className="pl-16 h-16 rounded-full border-2 border-gray-200 focus:border-[#fccc42] bg-white text-lg shadow-lg"
               />
-              <button className="absolute right-3 top-1/2 -translate-y-1/2 px-8 py-3 bg-[#ff5734] text-white font-semibold rounded-full hover:bg-[#e64d2d] transition-colors">
+              <button className="absolute right-3 top-1/2 -translate-y-1/2 px-8 py-3 bg-[#fccc42] text-[#151313] font-semibold rounded-full hover:bg-[#f4b91a] transition-colors">
                 Search
               </button>
             </div>
@@ -114,7 +114,7 @@ export default function LandingPage() {
           </h3>
           <Link
             href="/dashboard"
-            className="inline-block px-12 py-4 bg-[#ff5734] text-white text-xl font-bold rounded-full hover:bg-[#e64d2d] transition-colors shadow-lg hover:shadow-xl"
+            className="inline-block px-12 py-4 bg-[#fccc42] text-[#151313] text-xl font-bold rounded-full hover:bg-[#f4b91a] transition-colors shadow-lg hover:shadow-xl"
           >
             Start Learning Now
           </Link>
@@ -123,7 +123,7 @@ export default function LandingPage() {
 
       <footer className="border-t border-gray-200 mt-20 py-8">
         <div className="max-w-7xl mx-auto px-6 text-center text-gray-600">
-          <p>&copy; 2025 Learnify. Empowering learners worldwide.</p>
+          <p>&copy; 2025 Thrive. Empowering learners worldwide.</p>
         </div>
       </footer>
     </div>

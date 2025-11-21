@@ -135,7 +135,7 @@ export default function DashboardPage() {
             <div className="xl:col-span-2 bg-white rounded-3xl p-8 shadow-sm">
               <div className="flex items-center justify-between mb-6">
                 <h2 className="text-2xl font-bold text-[#151313]">My next lessons</h2>
-                <button className="text-[#ff5734] font-semibold text-sm hover:underline">
+                <button className="text-[#fccc42] font-semibold text-sm hover:underline">
                   View all lessons
                 </button>
               </div>

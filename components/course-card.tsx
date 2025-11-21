@@ -92,7 +92,7 @@ export function CourseCard({
 
         <Link
           href={`/course/${id}`}
-          className="px-6 py-2.5 bg-[#ff5734] text-white font-semibold rounded-full hover:bg-[#e64d2d] transition-colors"
+          className="px-6 py-2.5 bg-[#ff5734] text-white font-semibold rounded-full hover:bg-[#e64d2d] transition-colors shadow-md hover:shadow-lg"
         >
           Continue
         </Link>
