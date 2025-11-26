@@ -1,5 +1,6 @@
 'use client';
 
+import Link from 'next/link';
 import { Search, Bell, User } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 
@@ -12,13 +13,15 @@ interface TopbarProps {
 export function Topbar({ userName = 'Kacie Velasquez', userAvatar, userHandle = '@k_velasquez' }: TopbarProps) {
   return (
     <div className="h-20 flex items-center justify-between px-8 bg-white/50 backdrop-blur-sm border-b border-gray-200">
-      <div className="flex items-center gap-4">
-        <span className="text-sm text-gray-500">Welcome to</span>
-        <h1 className="text-2xl font-bold">
-          <span className="text-[#fccc42]">Th</span>
+      <Link href="/" className="flex items-center gap-1.5 group">
+        <span className="text-sm text-gray-500 tracking-wide group-hover:text-gray-700 transition-colors">
+          Welcome to
+        </span>
+        <h1 className="text-3xl font-bold group-hover:opacity-90 transition-opacity">
+          <span className="text-[#D8C4FB]">Th</span>
           <span className="text-[#151313]">rive</span>
         </h1>
-      </div>
+      </Link>
 
       <div className="flex-1 max-w-2xl mx-8">
         <div className="relative">
