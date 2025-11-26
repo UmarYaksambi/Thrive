@@ -10,7 +10,7 @@ interface TopbarProps {
   userHandle?: string;
 }
 
-export function Topbar({ userName = 'Kacie Velasquez', userAvatar, userHandle = '@k_velasquez' }: TopbarProps) {
+export function Topbar({ userName = 'Umar Yaksambi', userAvatar, userHandle = '@UmarYaksambi' }: TopbarProps) {
   return (
     <div className="h-20 flex items-center justify-between px-8 bg-white/50 backdrop-blur-sm border-b border-gray-200">
       <Link href="/" className="flex items-center gap-1.5 group">
