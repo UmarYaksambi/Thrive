@@ -2,7 +2,7 @@ import { createServerClient, type CookieOptions } from '@supabase/ssr';
 import { cookies } from 'next/headers';
 import { NextResponse } from 'next/server';
 
-export async function GET(request: Request) {
+export async function DELETE(request: Request) {
   const cookieStore = cookies();
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -19,20 +19,22 @@ export async function GET(request: Request) {
   let { data: { user } } = await supabase.auth.getUser();
   if (!user) user = { id: '41162d70-c555-4503-b84a-c925380d4f2c' } as any;
 
-  // Added 'subtopics' to the selection
-  const { data: topics, error } = await supabase
-    .from('topic_mastery')
-    .select('id, topic_name, mastery_percentage, subtopics')
-    .eq('user_id', user!.id);
+  try {
+    const { searchParams } = new URL(request.url);
+    const id = searchParams.get('id');
 
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+    if (!id) return NextResponse.json({ error: 'ID required' }, { status: 400 });
 
-  const overallMastery = topics && topics.length > 0
-    ? Math.round(topics.reduce((acc, curr) => acc + curr.mastery_percentage, 0) / topics.length)
-    : 0;
+    const { error } = await supabase
+      .from('topic_mastery')
+      .delete()
+      .eq('id', id)
+      .eq('user_id', user!.id);
 
-  return NextResponse.json({
-    topics: topics || [],
-    overallMastery,
-  });
+    if (error) throw error;
+
+    return NextResponse.json({ success: true });
+  } catch (error: any) {
+    return NextResponse.json({ error: error.message }, { status: 500 });
+  }
 }

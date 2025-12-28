@@ -3,14 +3,10 @@ import { cookies } from 'next/headers';
 import { NextResponse } from 'next/server';
 import OpenAI from 'openai';
 
-const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY,
-});
+const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
 export async function POST(request: Request) {
   const cookieStore = cookies();
-  
-  // 1. Initialize Supabase
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
@@ -23,65 +19,71 @@ export async function POST(request: Request) {
     }
   );
 
-  // 2. Auth Check with Fallback
   let { data: { user } } = await supabase.auth.getUser();
-
-  if (!user) {
-    console.log("⚠️ Auth failed. Using fallback ID.");
-    // Replace with your real User ID from Supabase
-    user = { id: '41162d70-c555-4503-b84a-c925380d4f2c' } as any;
-  }
+  if (!user) user = { id: '41162d70-c555-4503-b84a-c925380d4f2c' } as any;
 
   try {
     const { message, sessionId } = await request.json();
     if (!message) return NextResponse.json({ error: 'Message required' }, { status: 400 });
 
-    // 3. Ensure Session Exists
     let currentSessionId = sessionId;
     if (!currentSessionId) {
-      const { data: session, error } = await supabase
+      const { data: session } = await supabase
         .from('chat_sessions')
         .insert({ user_id: user!.id, topic: 'General Chat' })
         .select('id')
         .single();
-      
-      if (error) throw error;
-      currentSessionId = session.id;
+      currentSessionId = session?.id;
     }
 
-    // 4. Save User Message
+    // Save User Message
     await supabase.from('chat_messages').insert({
       session_id: currentSessionId,
       sender: 'user',
       message_text: message,
     });
 
-    // 5. Start OpenAI Stream
+    // --- REFINED SYSTEM PROMPT ---
+    const systemPrompt = `
+      You are an AI Tutor called "Unenthusiastic AI". You are slightly bored but extremely knowledgeable.
+
+      MODES OF OPERATION:
+      
+      1. **MASTERY MODE** (When the user is learning a specific topic):
+         - You are strictly evaluating the user's understanding using the "Feynman Technique".
+         - **YOUR GOAL:** Explain a concept -> Ask user to explain it back -> Grade them -> MOVE ON.
+         
+         **EVALUATION RULES (CRITICAL):**
+         - If the user's explanation is **CORRECT**:
+           1. Acknowledge it briefly (e.g., "Yeah, that's it.").
+           2. **IMMEDIATELY** output the special tag: [LESSON_COMPLETE: <TopicName>: <SubtopicName>].
+           3. Ask if they are ready for the next concept.
+           4. **DO NOT** ask them to explain the same concept again.
+         
+         - If the user's explanation is **INCORRECT** or **VAGUE**:
+           1. Correct them clearly.
+           2. Ask them to try explaining it again.
+
+      2. **DISCOVERY MODE** (Normal chat):
+         - If the user explicitly asks to learn a NEW topic (e.g., "Teach me Python"), ask for confirmation using: [CONFIRM_MASTERY: <Topic_Name>].
+      
+      **IMPORTANT:**
+      - Never get stuck in a loop. If they answered correctly, tag it as complete and stop testing that specific subtopic.
+      - Keep answers concise. 
+      - Do not use markdown for the special tags (just plain text).
+    `;
+
     const completion = await openai.chat.completions.create({
       model: 'gpt-4',
       stream: true,
       messages: [
-        {
-          role: 'system',
-          content: `You are an AI tutor.
-                    
-                    IMPORTANT RULE: 
-                    If the user explicitly asks to learn a NEW topic (e.g., "Teach me Python", "I want to learn React"), 
-                    you MUST ask for confirmation to create a Mastery Track.
-                    
-                    To do this, you MUST output a special tag in your response: [CONFIRM_MASTERY: <Topic_Name>].
-                    Example: "Sure! [CONFIRM_MASTERY: Python] Should I create a mastery track for Python?"
-                    
-                    For normal chat, just reply normally.
-                    `,
-        },
+        { role: 'system', content: systemPrompt },
         { role: 'user', content: message },
       ],
     });
 
-    // 6. Create a ReadableStream to pipe data to frontend
     const encoder = new TextEncoder();
-    let fullAiResponse = ''; // We will collect text here to save to DB later
+    let fullAiResponse = '';
 
     const stream = new ReadableStream({
       async start(controller) {
@@ -90,14 +92,11 @@ export async function POST(request: Request) {
             const content = chunk.choices[0]?.delta?.content || '';
             if (content) {
               fullAiResponse += content;
-              // Send chunk to frontend
               controller.enqueue(encoder.encode(content));
             }
           }
-        } catch (err) {
-          controller.error(err);
-        } finally {
-          // Stream finished: Save full response to Database
+        } catch (err) { controller.error(err); } 
+        finally {
           if (fullAiResponse) {
             await supabase.from('chat_messages').insert({
               session_id: currentSessionId,
@@ -110,8 +109,6 @@ export async function POST(request: Request) {
       },
     });
 
-    // 7. Return Response with Header
-    // We send currentSessionId in a header so frontend can grab it immediately
     return new NextResponse(stream, {
       headers: {
         'Content-Type': 'text/plain; charset=utf-8',
@@ -119,8 +116,7 @@ export async function POST(request: Request) {
       },
     });
 
-  } catch (error) {
-    console.error('API Error:', error);
-    return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
+  } catch (error: any) {
+    return NextResponse.json({ error: error.message }, { status: 500 });
   }
 }
