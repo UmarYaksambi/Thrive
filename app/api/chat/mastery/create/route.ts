@@ -2,6 +2,34 @@ import { createServerClient, type CookieOptions } from '@supabase/ssr';
 import { cookies } from 'next/headers';
 import { NextResponse } from 'next/server';
 
+// Helper: Normalize topic names for consistency
+function normalizeTopic(topic: string): string {
+  return topic.toLowerCase().trim();
+}
+
+// Helper: Generate smart subtopics based on topic
+function generateSubtopics(topic: string): Array<{name: string, completed: boolean}> {
+  const normalized = normalizeTopic(topic);
+  
+  // You can expand this with AI generation later
+  const topicMaps: Record<string, string[]> = {
+    'python': ['Syntax & Variables', 'Control Flow', 'Functions & Modules', 'OOP Basics'],
+    'javascript': ['Fundamentals', 'DOM Manipulation', 'Async Programming', 'ES6+ Features'],
+    'react': ['Components & Props', 'State & Lifecycle', 'Hooks', 'Context & Routing'],
+    'cyber security': ['Fundamentals', 'Authentication', 'Encryption', 'Threat Detection'],
+    'machine learning': ['Fundamentals', 'Supervised Learning', 'Neural Networks', 'Model Deployment'],
+  };
+
+  const subtopicNames = topicMaps[normalized] || [
+    'Foundations',
+    'Core Concepts', 
+    'Advanced Techniques',
+    'Real-world Application'
+  ];
+
+  return subtopicNames.map(name => ({ name, completed: false }));
+}
+
 export async function POST(request: Request) {
   const cookieStore = cookies();
   const supabase = createServerClient(
@@ -10,8 +38,12 @@ export async function POST(request: Request) {
     {
       cookies: {
         get(name: string) { return cookieStore.get(name)?.value; },
-        set(name: string, value: string, options: CookieOptions) { cookieStore.set({ name, value, ...options }); },
-        remove(name: string, options: CookieOptions) { cookieStore.set({ name, value: '', ...options }); },
+        set(name: string, value: string, options: CookieOptions) { 
+          cookieStore.set({ name, value, ...options }); 
+        },
+        remove(name: string, options: CookieOptions) { 
+          cookieStore.set({ name, value: '', ...options }); 
+        },
       },
     }
   );
@@ -21,36 +53,43 @@ export async function POST(request: Request) {
 
   try {
     const { topic } = await request.json();
-
     if (!topic) return NextResponse.json({ error: 'Topic required' }, { status: 400 });
 
-    // 1. Generate Subtopics (Mocked for now)
-    const defaultSubtopics = [
-      { name: 'Foundations', completed: false },
-      { name: 'Core Concepts', completed: false },
-      { name: 'Advanced Techniques', completed: false },
-      { name: 'Real-world Application', completed: false },
-    ];
+    const normalizedTopic = normalizeTopic(topic);
+    const subtopics = generateSubtopics(normalizedTopic);
 
-    // 2. Insert into Supabase
+    // Check if already exists
+    const { data: existing } = await supabase
+      .from('topic_mastery')
+      .select('id')
+      .eq('user_id', user!.id)
+      .eq('topic_name', normalizedTopic)
+      .single();
+
+    if (existing) {
+      return NextResponse.json({ 
+        error: 'Topic already exists',
+        id: existing.id 
+      }, { status: 409 });
+    }
+
+    // Insert new mastery track
     const { data, error } = await supabase
       .from('topic_mastery')
-      .upsert({
+      .insert({
         user_id: user!.id,
-        topic_name: topic,
+        topic_name: normalizedTopic,
         mastery_percentage: 0,
-        subtopics: defaultSubtopics
-      }, { onConflict: 'user_id, topic_name' })
+        subtopics: subtopics
+      })
       .select()
       .single();
 
-    if (error) {
-      console.error('Supabase Error:', error);
-      throw error;
-    }
+    if (error) throw error;
 
     return NextResponse.json(data);
   } catch (error: any) {
+    console.error('Create mastery error:', error);
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 }

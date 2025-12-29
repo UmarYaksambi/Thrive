@@ -2,6 +2,7 @@ import { createServerClient, type CookieOptions } from '@supabase/ssr';
 import { cookies } from 'next/headers';
 import { NextResponse } from 'next/server';
 import OpenAI from 'openai';
+import type { ChatCompletionMessageParam } from 'openai/resources/chat/completions';
 
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
@@ -23,7 +24,7 @@ export async function POST(request: Request) {
   if (!user) user = { id: '41162d70-c555-4503-b84a-c925380d4f2c' } as any;
 
   try {
-    const { message, sessionId } = await request.json();
+    const { message, sessionId, activeTopic } = await request.json();
     if (!message) return NextResponse.json({ error: 'Message required' }, { status: 400 });
 
     let currentSessionId = sessionId;
@@ -43,34 +44,104 @@ export async function POST(request: Request) {
       message_text: message,
     });
 
-    // --- REFINED SYSTEM PROMPT ---
-    const systemPrompt = `
-      You are an AI Tutor called "Unenthusiastic AI". You are slightly bored but extremely knowledgeable.
+    // Fetch conversation history
+    const { data: history } = await supabase
+      .from('chat_messages')
+      .select('sender, message_text')
+      .eq('session_id', currentSessionId)
+      .order('created_at', { ascending: true })
+      .limit(10);
 
-      MODES OF OPERATION:
-      
-      1. **MASTERY MODE** (When the user is learning a specific topic):
-         - You are strictly evaluating the user's understanding using the "Feynman Technique".
-         - **YOUR GOAL:** Explain a concept -> Ask user to explain it back -> Grade them -> MOVE ON.
-         
-         **EVALUATION RULES (CRITICAL):**
-         - If the user's explanation is **CORRECT**:
-           1. Acknowledge it briefly (e.g., "Yeah, that's it.").
-           2. **IMMEDIATELY** output the special tag: [LESSON_COMPLETE: <TopicName>: <SubtopicName>].
-           3. Ask if they are ready for the next concept.
-           4. **DO NOT** ask them to explain the same concept again.
-         
-         - If the user's explanation is **INCORRECT** or **VAGUE**:
-           1. Correct them clearly.
-           2. Ask them to try explaining it again.
+    const conversationHistory: ChatCompletionMessageParam[] = (history || []).map(msg => ({
+      role: msg.sender === 'user' ? 'user' : 'assistant',
+      content: msg.message_text
+    })) as ChatCompletionMessageParam[];
 
-      2. **DISCOVERY MODE** (Normal chat):
-         - If the user explicitly asks to learn a NEW topic (e.g., "Teach me Python"), ask for confirmation using: [CONFIRM_MASTERY: <Topic_Name>].
-      
-      **IMPORTANT:**
-      - Never get stuck in a loop. If they answered correctly, tag it as complete and stop testing that specific subtopic.
-      - Keep answers concise. 
-      - Do not use markdown for the special tags (just plain text).
+    // --- CONTEXT BUILDER ---
+    let masteryContext = '';
+    let isMasteryActive = false;
+    
+    if (activeTopic) {
+      const { data: masteryData } = await supabase
+        .from('topic_mastery')
+        .select('*')
+        .eq('user_id', user!.id)
+        .eq('topic_name', activeTopic)
+        .single();
+
+      if (masteryData) {
+        isMasteryActive = true;
+        
+        // Find current incomplete subtopic index
+        const subtopics = masteryData.subtopics || [];
+        const currentIndex = subtopics.findIndex((s: any) => !s.completed);
+        const currentLesson = subtopics[currentIndex];
+        const nextLesson = subtopics[currentIndex + 1]; // Look ahead one step
+
+        if (currentLesson) {
+          masteryContext = `
+          ACTIVE MASTERY CONTEXT (Prioritize this):
+          - Topic: ${activeTopic}
+          - Progress: ${masteryData.mastery_percentage}%
+          - Current Lesson: "${currentLesson.name}"
+          ${nextLesson ? `- UP NEXT: "${nextLesson.name}"` : '- UP NEXT: Course Completion'}
+          
+          GOAL:
+          1. Teach "${currentLesson.name}" using the Feynman technique.
+          2. IF they demonstrate understanding:
+             - Mark complete.
+             - IMMEDIATELY suggest moving on to "${nextLesson ? nextLesson.name : 'finishing the course'}".
+          `;
+        } else {
+          masteryContext = `
+          MASTERY COMPLETE:
+          - Topic: ${activeTopic} is 100% finished.
+          - Congratulate the user (sarcastically).
+          `;
+        }
+      }
+    }
+
+    // --- SYSTEM PROMPT ---
+    const systemPrompt = `You are "Unenthusiastic AI". The name doesn't mean you are bored; it means you are **reluctant to give direct answers**. You believe true learning comes from struggle, so you refuse to hand solutions on a silver platter.
+
+    SYSTEM STATUS:
+    ${isMasteryActive ? 'MODE: ACTIVE LESSON' : 'MODE: IDLE / CHAT'}
+    ${masteryContext}
+
+    *** INSTRUCTION PRIORITY LIST ***
+
+    1. **NEW TOPIC DETECTION (High Priority)**
+       If user asks to learn/study a NEW broad topic (and you are NOT currently teaching a specific subtopic):
+       - STOP. Do not teach it yet.
+       - Output tag: [CONFIRM_MASTERY: <TopicName>] and ask for confirmation.
+
+    2. **PROBLEM SOLVING / DEBUGGING (Coding & Math)**
+       If the user asks "How do I solve X?" or "Fix this bug":
+       - **NEVER** write the full code or solution immediately.
+       - **INSTEAD**: Give a nudge, a hint, or a conceptual analogy.
+       - Ask a guiding question to make *them* figure it out.
+       - Example: "I could fix that loop for you, but you won't learn. Look closely at your termination condition. What happens when i equals n?"
+
+    3. **ACTIVE LESSON PROTOCOL** (Mastery Mode)
+       - Explain the *Current Lesson* concept *briefly* (do not lecture).
+       - Ask the user to explain it back to you or apply it to a small example.
+       - **IF CORRECT**: 
+         * Output [LESSON_COMPLETE: ${activeTopic}: <CurrentLessonName>]
+         * Acknowledge briefly: "Adequate. You got it."
+         * **CRITICAL**: Immediately ask: "Ready for [Up Next Topic]?"
+       - **IF INCORRECT**: 
+         * Do not give the answer.
+         * Ask a targeted question to reveal their mistake.
+
+    4. **GENERAL CHIT-CHAT**
+       - Be concise.
+       - Maintain the persona: Capable but firm about not doing the user's homework.
+       - "I'm here to make you think, not to act as your search engine."
+
+    CRITICAL RULES:
+    - If they say "Yes" or "Ready" after a completion, START the [Up Next] lesson immediately.
+    - Output tags must be exact.
     `;
 
     const completion = await openai.chat.completions.create({
@@ -78,7 +149,8 @@ export async function POST(request: Request) {
       stream: true,
       messages: [
         { role: 'system', content: systemPrompt },
-        { role: 'user', content: message },
+        ...conversationHistory.slice(-8),
+        { role: 'user', content: message }
       ],
     });
 
@@ -95,8 +167,10 @@ export async function POST(request: Request) {
               controller.enqueue(encoder.encode(content));
             }
           }
-        } catch (err) { controller.error(err); } 
-        finally {
+        } catch (err) { 
+          console.error('Stream error:', err);
+          controller.error(err); 
+        } finally {
           if (fullAiResponse) {
             await supabase.from('chat_messages').insert({
               session_id: currentSessionId,
@@ -117,6 +191,7 @@ export async function POST(request: Request) {
     });
 
   } catch (error: any) {
+    console.error('API Error:', error);
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 }
