@@ -1,10 +1,11 @@
-'use client';
-
+import { cookies } from 'next/headers';
+import { createServerClient } from '@supabase/ssr';
+import { redirect } from 'next/navigation';
 import { Sidebar } from '@/components/sidebar';
 import { Topbar } from '@/components/topbar';
 import { CourseCard } from '@/components/course-card';
-import { Clock, ChevronDown } from 'lucide-react';
 
+// We keep the mock data for now until your courses table is ready
 const mockCourses = [
   {
     id: '1',
@@ -97,12 +98,47 @@ const nextLessons = [
   },
 ];
 
-export default function DashboardPage() {
+export default async function DashboardPage() {
+  const cookieStore = cookies();
+  
+  // Initialize the Supabase Server Client
+  const supabase = createServerClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    {
+      cookies: {
+        get(name: string) {
+          return cookieStore.get(name)?.value;
+        },
+      },
+    }
+  );
+
+  // 1. Verify if the user is logged in
+  const { data: { user } } = await supabase.auth.getUser();
+
+  // 2. Redirect to login if no session is found
+  if (!user) {
+    redirect('/login');
+  }
+
+  // 3. Fetch the real profile data from your public.profiles table
+  const { data: profile } = await supabase
+    .from('profiles')
+    .select('*')
+    .eq('id', user.id)
+    .single();
+
   return (
     <div className="min-h-screen bg-[#f7f7f5]">
       <Sidebar />
       <div className="ml-20">
-        <Topbar />
+        {/* 4. Pass the real user data to the Topbar */}
+        <Topbar 
+          userName={profile?.full_name || 'Learner'} 
+          userHandle={profile?.email?.split('@')[0] ? `@${profile.email.split('@')[0]}` : undefined}
+          userAvatar={profile?.avatar_url}
+        />
 
         <main className="p-8">
           <div className="mb-8">

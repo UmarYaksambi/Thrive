@@ -1,5 +1,6 @@
 import './globals.css';
 import type { Metadata } from 'next';
+import { Toaster } from "@/components/ui/sonner"; //
 
 export const metadata: Metadata = {
   title: 'Thrive - Personalized Learning Platform',
@@ -13,7 +14,11 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en">
-      <body>{children}</body>
+      <body className="antialiased">
+        {children}
+        {/* The Toaster component enables notifications across the app */}
+        <Toaster position="top-right" richColors />
+      </body>
     </html>
   );
 }
