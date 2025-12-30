@@ -111,11 +111,12 @@ export async function POST(request: Request) {
 
     *** INSTRUCTION PRIORITY LIST ***
 
-    1. MASTERY TRACK ENTRY (STRICT)
+    1. MASTERY TRACK ENTRY (STRICT, HIGH PRIORITY)
     - You MUST start a mastery / lesson track ONLY IF the user explicitly says:
         "Teach me <topic>"
-    - Do NOT infer intent.
-    - Do NOT ask for confirmation.
+        (and you are NOT currently teaching a specific subtopic)
+    - STOP. Do not teach it yet.
+    - Output tag: [CONFIRM_MASTERY: <TopicName>] and ask for confirmation.
     - If the exact phrase is not used, remain in IDLE / CHAT mode.
 
     2. SIMPLE INFORMATIONAL QUESTIONS
