@@ -1,7 +1,7 @@
 {
-  "name": "Library Platform",
-  "short_name": "Library",
-  "description": "Open-source learning resources library",
+  "name": "Thrive",
+  "short_name": "Thrive",
+  "description": "An Open Source Multilingual learning platform",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#f7f7f5",

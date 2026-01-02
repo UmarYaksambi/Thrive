@@ -6,6 +6,17 @@ import { NetworkStatus } from '@/components/network-status';
 export const metadata: Metadata = {
   title: 'Thrive - Personalized Learning Platform',
   description: 'Your personalized learning companion with AI-powered tutoring and progress tracking',
+icons: {
+    icon: [
+      { url: '/favicon.ico' }, 
+      { url: '/icons/icon-192x192.png', sizes: '192x192', type: 'image/png' },
+      { url: '/icons/icon-512x512.png', sizes: '512x512', type: 'image/png' },
+    ],
+    apple: [
+      { url: '/icons/icon-192x192.png' }, 
+    ],
+  },
+  manifest: '/manifest.json'
 };
 
 export default function RootLayout({
