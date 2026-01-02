@@ -12,7 +12,7 @@ const anton = Anton({
 
 export default function LandingPage() {
   return (
-  <div className="min-h-screen bg-gradient-to-br from-[#f7f7f5] via-[#fef9f3] to-[#f5f3fe] bg-[linear-gradient(90deg,#e5d6ff40_1px,transparent_1px),linear-gradient(#e5d6ff40_1px,transparent_1px)] bg-[size:34px_34px] overflow-hidden">
+  <div className="min-h-screen from-[#f7f7f5] via-[#fef9f3] to-[#f5f3fe] bg-[linear-gradient(90deg,#e5d6ff40_1px,transparent_1px),linear-gradient(#e5d6ff40_1px,transparent_1px)] bg-[size:34px_34px] overflow-hidden">
       <style dangerouslySetInnerHTML={{__html: `
         @keyframes rocketFly {
           0% {
