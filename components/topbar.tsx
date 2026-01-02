@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { Search, Bell, User } from 'lucide-react';
+import { Search, Download, User } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 
 interface TopbarProps {
@@ -37,10 +37,14 @@ export function Topbar({ userName = 'Umar Yaksambi', userAvatar, userHandle = '@
       </div>
 
       <div className="flex items-center gap-4">
-        <button className="w-12 h-12 rounded-full bg-white border-2 border-gray-200 flex items-center justify-center hover:border-[#fccc42] hover:bg-[#fccc42]/5 transition-colors relative">
-          <Bell className="w-5 h-5 text-gray-700" />
-          <span className="absolute top-1 right-1 w-2 h-2 bg-[#fccc42] rounded-full"></span>
-        </button>
+        {/* Changed Bell Button to Downloads Link */}
+        <Link 
+          href="/downloads" 
+          className="w-12 h-12 rounded-full bg-white border-2 border-gray-200 flex items-center justify-center hover:border-[#fccc42] hover:bg-[#fccc42]/5 transition-colors relative group"
+          title="My Downloads"
+        >
+          <Download className="w-5 h-5 text-gray-700 group-hover:text-[#fccc42] transition-colors" />
+        </Link>
 
         <div className="flex items-center gap-3">
           <div className="w-12 h-12 rounded-full bg-gradient-to-br from-[#be94f5] to-[#ff5734] flex items-center justify-center">

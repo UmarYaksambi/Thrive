@@ -1,6 +1,7 @@
 import './globals.css';
 import type { Metadata } from 'next';
-import { Toaster } from "@/components/ui/sonner"; //
+import { Toaster } from "@/components/ui/sonner"; 
+import { NetworkStatus } from '@/components/network-status';
 
 export const metadata: Metadata = {
   title: 'Thrive - Personalized Learning Platform',
@@ -14,10 +15,14 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en">
-      <body className="antialiased">
+      <head>
+        <link rel="manifest" href="/manifest.json" />
+        <meta name="theme-color" content="#151313" />
+        <link rel="apple-touch-icon" href="/icons/icon-192x192.png" />
+      </head>
+      <body>
+        <NetworkStatus />
         {children}
-        {/* The Toaster component enables notifications across the app */}
-        <Toaster position="top-right" richColors />
       </body>
     </html>
   );

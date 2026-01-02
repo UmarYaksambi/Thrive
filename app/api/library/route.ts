@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 
+export const maxDuration = 300; 
+
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
   process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
@@ -94,7 +96,7 @@ export async function POST(req: NextRequest) {
     const file = formData.get('file') as File | null;
     let resourceUrl = formData.get('url') as string;
 
-    if (type === 'pdf' && file && file.size > 0) {
+    if (file && file.size > 0) {
       const fileExt = file.name.split('.').pop();
       const fileName = `${Date.now()}-${Math.random().toString(36).substring(7)}.${fileExt}`;
       
