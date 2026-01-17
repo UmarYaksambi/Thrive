@@ -10,7 +10,6 @@ export function NetworkStatus() {
     setIsOnline(navigator.onLine);
 
     const handleOnline = () => setIsOnline(true);
-
     const handleOffline = () => setIsOnline(false);
 
     window.addEventListener('online', handleOnline);
