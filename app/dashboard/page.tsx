@@ -100,7 +100,7 @@ const nextLessons = [
 
 export default async function DashboardPage() {
   const cookieStore = cookies();
-  
+
   // Initialize the Supabase Server Client
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -115,7 +115,9 @@ export default async function DashboardPage() {
   );
 
   // 1. Verify if the user is logged in
-  const { data: { user } } = await supabase.auth.getUser();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
 
   // 2. Redirect to login if no session is found
   if (!user) {
@@ -134,16 +136,22 @@ export default async function DashboardPage() {
       <Sidebar />
       <div className="ml-20">
         {/* 4. Pass the real user data to the Topbar */}
-        <Topbar 
-          userName={profile?.full_name || 'Learner'} 
-          userHandle={profile?.email?.split('@')[0] ? `@${profile.email.split('@')[0]}` : undefined}
+        <Topbar
+          userName={profile?.full_name || 'Learner'}
+          userHandle={
+            profile?.email?.split('@')[0]
+              ? `@${profile.email.split('@')[0]}`
+              : undefined
+          }
           userAvatar={profile?.avatar_url}
         />
 
         <main className="p-8">
           <div className="mb-8">
             <div className="flex items-center justify-between mb-6">
-              <h2 className="text-3xl font-bold text-[#151313]">My courses</h2>
+              <h2 className="text-3xl font-bold text-[#151313]">
+                My courses
+              </h2>
               <div className="flex gap-2">
                 <button className="px-6 py-2 bg-[#151313] text-white rounded-full font-semibold text-sm hover:bg-[#2a2828] transition-colors">
                   All courses
@@ -170,7 +178,9 @@ export default async function DashboardPage() {
           <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
             <div className="xl:col-span-2 bg-white rounded-3xl p-8 shadow-sm">
               <div className="flex items-center justify-between mb-6">
-                <h2 className="text-2xl font-bold text-[#151313]">My next lessons</h2>
+                <h2 className="text-2xl font-bold text-[#151313]">
+                  My next lessons
+                </h2>
                 <button className="text-[#fccc42] font-semibold text-sm hover:underline">
                   View all lessons
                 </button>
@@ -180,7 +190,9 @@ export default async function DashboardPage() {
                 <div className="grid grid-cols-12 gap-4 pb-3 border-b border-gray-200 text-sm font-semibold text-gray-500">
                   <div className="col-span-6">Lesson</div>
                   <div className="col-span-4">Teacher</div>
-                  <div className="col-span-2 text-right">Duration</div>
+                  <div className="col-span-2 text-right">
+                    Duration
+                  </div>
                 </div>
 
                 {nextLessons.map((lesson) => (
@@ -189,14 +201,20 @@ export default async function DashboardPage() {
                     className="grid grid-cols-12 gap-4 py-4 hover:bg-gray-50 rounded-xl transition-colors cursor-pointer"
                   >
                     <div className="col-span-6">
-                      <div className="font-bold text-[#151313] mb-1">{lesson.title}</div>
-                      <div className="text-sm text-gray-500">{lesson.subtitle}</div>
+                      <div className="font-bold text-[#151313] mb-1">
+                        {lesson.title}
+                      </div>
+                      <div className="text-sm text-gray-500">
+                        {lesson.subtitle}
+                      </div>
                     </div>
                     <div className="col-span-4 flex items-center gap-3">
                       <div className="w-10 h-10 rounded-full bg-gradient-to-br from-[#be94f5] to-[#ff5734] flex items-center justify-center text-white font-bold text-sm">
                         {lesson.teacher.charAt(0)}
                       </div>
-                      <span className="font-medium text-[#151313]">{lesson.teacher}</span>
+                      <span className="font-medium text-[#151313]">
+                        {lesson.teacher}
+                      </span>
                     </div>
                     <div className="col-span-2 text-right font-semibold text-[#151313] flex items-center justify-end">
                       {lesson.duration}
@@ -217,11 +235,14 @@ export default async function DashboardPage() {
               </div>
 
               <h2 className="text-2xl font-bold mb-6 leading-tight">
-                Microsoft Future Ready: Fundamentals of Big Data
+                Microsoft Future Ready: Fundamentals of Big
+                Data
               </h2>
 
               <div className="mb-6">
-                <p className="text-sm text-gray-400 mb-3">They are already studying</p>
+                <p className="text-sm text-gray-400 mb-3">
+                  They are already studying
+                </p>
                 <div className="flex items-center">
                   <div className="flex">
                     {[1, 2, 3].map((i) => (

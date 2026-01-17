@@ -2,12 +2,24 @@
 
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation'; // Added useRouter
-import { BookOpen, LayoutGrid, PieChart, Calendar, MessageCircle, Settings, LogOut } from 'lucide-react';
+import {
+  BookOpen,
+  LayoutGrid,
+  PieChart,
+  Calendar,
+  MessageCircle,
+  Settings,
+  LogOut,
+} from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { logout } from '@/app/login/actions'; // Import the action
 
 const sidebarItems = [
-  { icon: LayoutGrid, label: 'Dashboard', href: '/dashboard' },
+  {
+    icon: LayoutGrid,
+    label: 'Dashboard',
+    href: '/dashboard',
+  },
   { icon: BookOpen, label: 'Library', href: '/library' },
   { icon: PieChart, label: 'Planner', href: '/planner' },
   { icon: Calendar, label: 'Calendar', href: '/calendar' },
@@ -29,7 +41,9 @@ export function Sidebar() {
       <div className="flex flex-col items-center gap-4 flex-1">
         {sidebarItems.map((item, index) => {
           const Icon = item.icon;
-          const isActive = pathname === item.href || pathname.startsWith(item.href + '/');
+          const isActive =
+            pathname === item.href ||
+            pathname.startsWith(item.href + '/');
 
           return (
             <Link
@@ -49,12 +63,12 @@ export function Sidebar() {
         })}
       </div>
 
-      <button 
+      <button
         onClick={handleLogout} // Attach the handler
-        className="w-14 h-14 rounded-2xl flex items-center justify-center text-white hover:bg-[#2a2828] transition-all hover:scale-110" 
+        className="w-14 h-14 rounded-2xl flex items-center justify-center text-white hover:bg-[#2a2828] transition-all hover:scale-110"
         title="Logout"
-      >        
-      <LogOut className="w-6 h-6" />
+      >
+        <LogOut className="w-6 h-6" />
       </button>
     </div>
   );

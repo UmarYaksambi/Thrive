@@ -1,22 +1,29 @@
 import './globals.css';
 import type { Metadata } from 'next';
-import { Toaster } from "@/components/ui/sonner"; 
+import { Toaster } from '@/components/ui/sonner';
 import { NetworkStatus } from '@/components/network-status';
 
 export const metadata: Metadata = {
   title: 'Thrive - Personalized Learning Platform',
-  description: 'Your personalized learning companion with AI-powered tutoring and progress tracking',
-icons: {
+  description:
+    'Your personalized learning companion with AI-powered tutoring and progress tracking',
+  icons: {
     icon: [
-      { url: '/favicon.ico' }, 
-      { url: '/icons/icon-192x192.png', sizes: '192x192', type: 'image/png' },
-      { url: '/icons/icon-512x512.png', sizes: '512x512', type: 'image/png' },
+      { url: '/favicon.ico' },
+      {
+        url: '/icons/icon-192x192.png',
+        sizes: '192x192',
+        type: 'image/png',
+      },
+      {
+        url: '/icons/icon-512x512.png',
+        sizes: '512x512',
+        type: 'image/png',
+      },
     ],
-    apple: [
-      { url: '/icons/icon-192x192.png' }, 
-    ],
+    apple: [{ url: '/icons/icon-192x192.png' }],
   },
-  manifest: '/manifest.json'
+  manifest: '/manifest.json',
 };
 
 export default function RootLayout({
@@ -29,7 +36,10 @@ export default function RootLayout({
       <head>
         <link rel="manifest" href="/manifest.json" />
         <meta name="theme-color" content="#151313" />
-        <link rel="apple-touch-icon" href="/icons/icon-192x192.png" />
+        <link
+          rel="apple-touch-icon"
+          href="/icons/icon-192x192.png"
+        />
       </head>
       <body>
         <NetworkStatus />

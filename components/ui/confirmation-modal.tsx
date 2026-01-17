@@ -24,12 +24,12 @@ export function ConfirmationModal({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-[#151313]/40 backdrop-blur-sm p-4 animate-in fade-in duration-200">
-      <div 
+      <div
         className="bg-white rounded-3xl max-w-md w-full p-6 shadow-2xl scale-100 animate-in zoom-in-95 duration-200 relative"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Close Button */}
-        <button 
+        <button
           onClick={onClose}
           disabled={isLoading}
           className="absolute right-4 top-4 text-gray-400 hover:text-[#151313] transition-colors disabled:opacity-50"
@@ -42,7 +42,9 @@ export function ConfirmationModal({
           <div className="w-12 h-12 bg-red-100 rounded-full flex items-center justify-center mb-4">
             <AlertTriangle className="w-6 h-6 text-red-600" />
           </div>
-          <h3 className="text-xl font-bold text-[#151313] mb-2">{title}</h3>
+          <h3 className="text-xl font-bold text-[#151313] mb-2">
+            {title}
+          </h3>
           <p className="text-gray-500 text-sm leading-relaxed">
             {description}
           </p>
