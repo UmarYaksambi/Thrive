@@ -12,7 +12,11 @@ import { Document, DocumentStatus } from '@/types/supabase';
 
 // Using types from @/types/supabase
 
-export function DocumentApproval() {
+interface DocumentApprovalProps {
+  currentUserId: string;
+}
+
+export function DocumentApproval({ currentUserId }: DocumentApprovalProps) {
   const [documents, setDocuments] = useState<Document[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
@@ -27,47 +31,29 @@ export function DocumentApproval() {
     fetchDocuments();
   }, [selectedStatus]);
 
-  /* 
-    REAL DATABASE IMPLEMENTATION 
-  */
   const fetchDocuments = async () => {
     try {
       setLoading(true);
 
-      // select(*) is good, but we need submitter details.
-      // Assuming 'profiles' table exists and links to auth.users via id.
-      // If 'submitted_by' is a UUID, we fetch the profile.
-      let query = supabase
-        .from('library_items')
-        .select(`
-          *,
-          profile:profiles!submitted_by(full_name, email)
-        `)
-        .order('created_at', { ascending: false });
-
-      if (selectedStatus !== 'all') {
-        query = query.eq('status', selectedStatus);
-      }
-
+      const params = new URLSearchParams();
+      params.set('status', selectedStatus);
       if (searchTerm) {
-        query = query.or(`title.ilike.%${searchTerm}%,description.ilike.%${searchTerm}%`);
+        params.set('search', searchTerm);
       }
 
-      const { data, error } = await query;
+      const response = await fetch(`/api/admin/library?${params.toString()}`);
+      const result = await response.json();
 
-      if (error) {
-        console.error('Supabase error fetching documents:', error);
-        throw error;
+      if (!response.ok) {
+        throw new Error(result.error || 'Failed to fetch documents');
       }
 
       // Transform data to match UI expectations
-      const mappedDocs = (data || []).map((doc: any) => ({
+      const mappedDocs = (result.documents || []).map((doc: any) => ({
         ...doc,
-        // Ensure arrays
         categories: Array.isArray(doc.categories) ? doc.categories : doc.categories ? [doc.categories] : ['Uncategorized'],
         status: doc.status || 'pending',
-        submitted_at: doc.created_at, // Use created_at as submission time
-        // Map joined profile data to 'user' object expected by UI
+        submitted_at: doc.created_at,
         user: {
           id: doc.submitted_by,
           email: doc.profile?.email,
@@ -77,7 +63,7 @@ export function DocumentApproval() {
 
       setDocuments(mappedDocs);
     } catch (error) {
-      console.error('Error in fetchDocuments:', error);
+      console.error('Error fetching documents:', error);
     } finally {
       setLoading(false);
     }
@@ -85,22 +71,19 @@ export function DocumentApproval() {
 
   const handleApprove = async (documentId: string) => {
     try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
+      const response = await fetch('/api/admin/library', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ documentId, action: 'approve' }),
+      });
 
-      const { error } = await supabase
-        .from('library_items')
-        .update({
-          status: 'approved',
-          approved_by: user.id,
-          approved_at: new Date().toISOString(),
-          rejection_reason: null,
-        })
-        .eq('id', documentId);
+      const result = await response.json();
 
-      if (error) throw error;
+      if (!response.ok) {
+        throw new Error(result.error || 'Failed to approve document');
+      }
 
-      // Optimistic update
+      // Update local state
       setDocuments(prev =>
         prev.map(doc =>
           doc.id === documentId
@@ -112,9 +95,11 @@ export function DocumentApproval() {
       if (selectedDocument?.id === documentId) {
         setSelectedDocument(prev => prev ? { ...prev, status: 'approved', rejection_reason: undefined } : null);
       }
-    } catch (error) {
+
+      alert('Document approved successfully!');
+    } catch (error: any) {
       console.error('Error approving document:', error);
-      alert('Failed to approve document. Check console for details.');
+      alert(`Failed to approve: ${error.message}`);
     }
   };
 
@@ -125,20 +110,21 @@ export function DocumentApproval() {
     }
 
     try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
+      const response = await fetch('/api/admin/library', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          documentId,
+          action: 'reject',
+          rejectionReason: rejectionReason.trim()
+        }),
+      });
 
-      const { error } = await supabase
-        .from('library_items')
-        .update({
-          status: 'rejected',
-          approved_by: user.id, // We track reviewer in approved_by for simplicity or add reviewed_by col
-          approved_at: new Date().toISOString(),
-          rejection_reason: rejectionReason,
-        })
-        .eq('id', documentId);
+      const result = await response.json();
 
-      if (error) throw error;
+      if (!response.ok) {
+        throw new Error(result.error || 'Failed to reject document');
+      }
 
       setDocuments(prev =>
         prev.map(doc =>
@@ -153,9 +139,10 @@ export function DocumentApproval() {
       }
 
       setRejectionReason('');
-    } catch (error) {
+      alert('Document rejected successfully!');
+    } catch (error: any) {
       console.error('Error rejecting document:', error);
-      alert('Failed to reject document. Check console for details.');
+      alert(`Failed to reject: ${error.message}`);
     }
   };
 
@@ -337,184 +324,182 @@ export function DocumentApproval() {
         </div>
 
         {selectedDocument && (
-          <div className="lg:col-span-1">
-            <div className="bg-white rounded-lg border overflow-hidden sticky top-6">
-              <div className="p-6 border-b">
-                <div className="flex items-start justify-between">
-                  <div>
-                    <h3 className="text-lg font-medium">Document Details</h3>
-                    <p className="text-sm text-muted-foreground">
-                      Review and manage this document
-                    </p>
+          <div className="fixed inset-y-0 right-0 z-50 w-full sm:max-w-md bg-white shadow-xl transform transition-transform duration-300 ease-in-out border-l flex flex-col h-full">
+            <div className="p-6 border-b bg-white/95 backdrop-blur-sm sticky top-0 z-10">
+              <div className="flex items-start justify-between">
+                <div>
+                  <h3 className="text-lg font-medium">Document Details</h3>
+                  <p className="text-sm text-muted-foreground">
+                    Review and manage this document
+                  </p>
+                </div>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-8 w-8"
+                  onClick={() => setSelectedDocument(null)}
+                >
+                  <X className="h-4 w-4" />
+                  <span className="sr-only">Close</span>
+                </Button>
+              </div>
+            </div>
+
+            <div className="flex-1 overflow-y-auto p-6 space-y-6">
+              <div>
+                <h4 className="text-sm font-medium text-gray-500">Title</h4>
+                <p className="mt-1 text-sm text-gray-900">{selectedDocument.title}</p>
+              </div>
+
+              <div>
+                <h4 className="text-sm font-medium text-gray-500">Description</h4>
+                <p className="mt-1 text-sm text-gray-900 whitespace-pre-line">
+                  {selectedDocument.description || 'No description provided.'}
+                </p>
+              </div>
+
+              <div>
+                <h4 className="text-sm font-medium text-gray-500">Submitted By</h4>
+                <div className="mt-1 flex items-center">
+                  <div className="h-8 w-8 rounded-full bg-gray-100 flex items-center justify-center text-sm font-medium text-gray-600 mr-2">
+                    {selectedDocument.user?.raw_user_meta_data?.full_name?.charAt(0) ||
+                      selectedDocument.user?.email?.charAt(0).toUpperCase() || 'U'}
                   </div>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="h-8 w-8"
-                    onClick={() => setSelectedDocument(null)}
-                  >
-                    <X className="h-4 w-4" />
-                    <span className="sr-only">Close</span>
-                  </Button>
+                  <div>
+                    <p className="text-sm font-medium text-gray-900">
+                      {selectedDocument.user?.raw_user_meta_data?.full_name || 'Unknown User'}
+                    </p>
+                    <p className="text-xs text-gray-500">{selectedDocument.user?.email}</p>
+                  </div>
                 </div>
               </div>
 
-              <div className="p-6 space-y-6">
+              <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <h4 className="text-sm font-medium text-gray-500">Title</h4>
-                  <p className="mt-1 text-sm text-gray-900">{selectedDocument.title}</p>
-                </div>
-
-                <div>
-                  <h4 className="text-sm font-medium text-gray-500">Description</h4>
-                  <p className="mt-1 text-sm text-gray-900 whitespace-pre-line">
-                    {selectedDocument.description || 'No description provided.'}
+                  <h4 className="text-sm font-medium text-gray-500">File Type</h4>
+                  <p className="mt-1 text-sm text-gray-900">
+                    {(selectedDocument.file_type ?? '').split('/').pop()?.toUpperCase() || 'FILE'}
                   </p>
                 </div>
-
                 <div>
-                  <h4 className="text-sm font-medium text-gray-500">Submitted By</h4>
-                  <div className="mt-1 flex items-center">
-                    <div className="h-8 w-8 rounded-full bg-gray-100 flex items-center justify-center text-sm font-medium text-gray-600 mr-2">
-                      {selectedDocument.user?.raw_user_meta_data?.full_name?.charAt(0) ||
-                        selectedDocument.user?.email?.charAt(0).toUpperCase() || 'U'}
-                    </div>
-                    <div>
-                      <p className="text-sm font-medium text-gray-900">
-                        {selectedDocument.user?.raw_user_meta_data?.full_name || 'Unknown User'}
-                      </p>
-                      <p className="text-xs text-gray-500">{selectedDocument.user?.email}</p>
-                    </div>
-                  </div>
+                  <h4 className="text-sm font-medium text-gray-500">File Size</h4>
+                  <p className="mt-1 text-sm text-gray-900">
+                    {formatFileSize(selectedDocument.file_size || 0)}
+                  </p>
                 </div>
+              </div>
 
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <h4 className="text-sm font-medium text-gray-500">File Type</h4>
-                    <p className="mt-1 text-sm text-gray-900">
-                      {(selectedDocument.file_type ?? '').split('/').pop()?.toUpperCase() || 'FILE'}
-                    </p>
-                  </div>
-                  <div>
-                    <h4 className="text-sm font-medium text-gray-500">File Size</h4>
-                    <p className="mt-1 text-sm text-gray-900">
-                      {formatFileSize(selectedDocument.file_size || 0)}
-                    </p>
-                  </div>
+              <div>
+                <h4 className="text-sm font-medium text-gray-500">Categories</h4>
+                <div className="mt-2 flex flex-wrap gap-2">
+                  {selectedDocument.categories?.map((category, index) => (
+                    <Badge key={index} variant="outline" className="text-xs">
+                      {category}
+                    </Badge>
+                  )) || <span className="text-sm text-gray-500">No categories</span>}
                 </div>
+              </div>
 
-                <div>
-                  <h4 className="text-sm font-medium text-gray-500">Categories</h4>
-                  <div className="mt-2 flex flex-wrap gap-2">
-                    {selectedDocument.categories?.map((category, index) => (
-                      <Badge key={index} variant="outline" className="text-xs">
-                        {category}
-                      </Badge>
-                    )) || <span className="text-sm text-gray-500">No categories</span>}
-                  </div>
-                </div>
-
-                <div>
-                  <h4 className="text-sm font-medium text-gray-500">Status</h4>
-                  <div className="mt-2">
-                    {getStatusBadge((selectedDocument.status ?? 'pending') as DocumentStatus)}
-                    {selectedDocument.status === 'rejected' && selectedDocument.rejection_reason && (
-                      <div className="mt-2 p-3 bg-red-50 rounded-md text-sm text-red-700">
-                        <p className="font-medium">Rejection Reason:</p>
-                        <p className="mt-1">{selectedDocument.rejection_reason}</p>
-                      </div>
-                    )}
-                  </div>
-                </div>
-
-                {selectedDocument.status === 'pending' && (
-                  <div className="space-y-4 pt-4 border-t">
-                    <div>
-                      <h4 className="text-sm font-medium text-gray-700 mb-2">Review Actions</h4>
-                      <div className="space-y-3">
-                        <Button
-                          variant="outline"
-                          className="w-full justify-start bg-green-50 border-green-200 text-green-700 hover:bg-green-100"
-                          onClick={() => handleApprove(selectedDocument.id)}
-                        >
-                          <Check className="h-4 w-4 mr-2" />
-                          Approve Document
-                        </Button>
-
-                        <div className="space-y-2">
-                          <Input
-                            placeholder="Reason for rejection (required)"
-                            value={rejectionReason}
-                            onChange={(e) => setRejectionReason(e.target.value)}
-                            className="w-full"
-                          />
-                          <Button
-                            variant="outline"
-                            className="w-full justify-start bg-red-50 border-red-200 text-red-700 hover:bg-red-100"
-                            onClick={() => handleReject(selectedDocument.id)}
-                            disabled={!rejectionReason.trim()}
-                          >
-                            <X className="h-4 w-4 mr-2" />
-                            Reject Document
-                          </Button>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                )}
-
-                <div className="pt-4 border-t">
-                  <div className="flex justify-between text-xs text-gray-500">
-                    <div>Submitted</div>
-                    <div>
-                      {selectedDocument.submitted_at
-                        ? formatDistanceToNow(new Date(selectedDocument.submitted_at), { addSuffix: true })
-                        : '-'}
-                    </div>
-                  </div>
-                  {selectedDocument.reviewed_at && (
-                    <div className="flex justify-between text-xs text-gray-500 mt-1">
-                      <div>Last Reviewed</div>
-                      <div>
-                        {selectedDocument.reviewed_at
-                          ? formatDistanceToNow(new Date(selectedDocument.reviewed_at), { addSuffix: true })
-                          : '-'}
-                      </div>
+              <div>
+                <h4 className="text-sm font-medium text-gray-500">Status</h4>
+                <div className="mt-2">
+                  {getStatusBadge((selectedDocument.status ?? 'pending') as DocumentStatus)}
+                  {selectedDocument.status === 'rejected' && selectedDocument.rejection_reason && (
+                    <div className="mt-2 p-3 bg-red-50 rounded-md text-sm text-red-700">
+                      <p className="font-medium">Rejection Reason:</p>
+                      <p className="mt-1">{selectedDocument.rejection_reason}</p>
                     </div>
                   )}
                 </div>
               </div>
 
-              <div className="bg-gray-50 px-6 py-4 flex justify-end space-x-3 border-t">
-                <Button
-                  variant="outline"
-                  onClick={() => {
-                    if (!selectedDocument.file_url) return;
-                    const link = document.createElement('a');
-                    link.href = selectedDocument.file_url;
-                    link.download = selectedDocument.title || 'download';
-                    document.body.appendChild(link);
-                    link.click();
-                    document.body.removeChild(link);
-                  }}
-                >
-                  <Download className="h-4 w-4 mr-2" />
-                  Download
-                </Button>
-                <Button
-                  variant="default"
-                  onClick={() => {
-                    if (selectedDocument.file_url) window.open(selectedDocument.file_url, '_blank');
-                  }}
-                >
-                  <Eye className="h-4 w-4 mr-2" />
-                  View Full Screen
-                </Button>
+              {selectedDocument.status === 'pending' && (
+                <div className="space-y-4 pt-4 border-t">
+                  <div>
+                    <h4 className="text-sm font-medium text-gray-700 mb-2">Review Actions</h4>
+                    <div className="flex-1 overflow-y-auto p-6 space-y-6">
+                      <Button
+                        variant="outline"
+                        className="w-full justify-start bg-green-50 border-green-200 text-green-700 hover:bg-green-100"
+                        onClick={() => handleApprove(selectedDocument.id)}
+                      >
+                        <Check className="h-4 w-4 mr-2" />
+                        Approve Document
+                      </Button>
+
+                      <div className="space-y-2">
+                        <Input
+                          placeholder="Reason for rejection (required)"
+                          value={rejectionReason}
+                          onChange={(e) => setRejectionReason(e.target.value)}
+                          className="w-full"
+                        />
+                        <Button
+                          variant="outline"
+                          className="w-full justify-start bg-red-50 border-red-200 text-red-700 hover:bg-red-100"
+                          onClick={() => handleReject(selectedDocument.id)}
+                          disabled={!rejectionReason.trim()}
+                        >
+                          <X className="h-4 w-4 mr-2" />
+                          Reject Document
+                        </Button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              <div className="pt-4 border-t">
+                <div className="flex justify-between text-xs text-gray-500">
+                  <div>Submitted</div>
+                  <div>
+                    {selectedDocument.submitted_at
+                      ? formatDistanceToNow(new Date(selectedDocument.submitted_at), { addSuffix: true })
+                      : '-'}
+                  </div>
+                </div>
+                {selectedDocument.reviewed_at && (
+                  <div className="flex justify-between text-xs text-gray-500 mt-1">
+                    <div>Last Reviewed</div>
+                    <div>
+                      {selectedDocument.reviewed_at
+                        ? formatDistanceToNow(new Date(selectedDocument.reviewed_at), { addSuffix: true })
+                        : '-'}
+                    </div>
+                  </div>
+                )}
               </div>
+            </div>
+
+            <div className="bg-gray-50 px-6 py-4 flex justify-end space-x-3 border-t">
+              <Button
+                variant="outline"
+                onClick={() => {
+                  if (!selectedDocument.file_url) return;
+                  const link = document.createElement('a');
+                  link.href = selectedDocument.file_url;
+                  link.download = selectedDocument.title || 'download';
+                  document.body.appendChild(link);
+                  link.click();
+                  document.body.removeChild(link);
+                }}
+              >
+                <Download className="h-4 w-4 mr-2" />
+                Download
+              </Button>
+              <Button
+                variant="default"
+                onClick={() => {
+                  if (selectedDocument.file_url) window.open(selectedDocument.file_url, '_blank');
+                }}
+              >
+                <Eye className="h-4 w-4 mr-2" />
+                View Full Screen
+              </Button>
             </div>
           </div>
         )}
       </div>
-    </div>
+    </div >
   );
 }

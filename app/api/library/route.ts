@@ -1,40 +1,53 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createClient } from '@supabase/supabase-js';
+import { createServerClient, type CookieOptions } from '@supabase/ssr';
+import { cookies } from 'next/headers';
 
-export const maxDuration = 300; 
+export const maxDuration = 300;
 
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-);
+// Helper to get authenticated client
+const getSupabase = (cookieStore: ReturnType<typeof cookies>) => {
+  return createServerClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    {
+      cookies: {
+        getAll() {
+          return cookieStore.getAll()
+        },
+        setAll(cookiesToSet) {
+          try {
+            cookiesToSet.forEach(({ name, value, options }) =>
+              cookieStore.set(name, value, options)
+            )
+          } catch {
+            // The `setAll` method was called from a Server Component. 
+            // This can be ignored if you have middleware refreshing user sessions.
+          }
+        },
+      },
+    }
+  );
+}
 
 const PASTEL_COLORS = [
-  // Lavender / Purple
   '#be94f5', '#d7c6f7', '#cdb4db', '#e0bbff', '#ede7f6', '#f3e8ff',
-
-  // Pink / Rose
   '#ff9aa2', '#ffb7b2', '#ffc9de', '#f1c0e8', '#f8cdda', '#fde2e4',
-
-  // Peach / Coral
   '#ffd6a5', '#ffdfba', '#ffe5b4', '#fcd5ce', '#f8edeb',
-
-  // Yellow / Cream
   '#fccc42', '#fff1b6', '#fff3bf', '#fef9c3', '#faedcd',
-
-  // Mint / Green
   '#b5ead7', '#caffbf', '#d9f8c4', '#e2f0cb', '#e8f5e9', '#dcfce7',
-
-  // Teal / Aqua
   '#a8d8ea', '#bde0fe', '#cce3f6', '#d0f4ff', '#e0fbfc',
-
-  // Blue / Sky
   '#cfe1f3', '#dbeafe', '#e0e7ff', '#eef2ff',
-
-  // Neutrals / Soft Accents
   '#f1f5f9', '#f5f5f5', '#f7ede2', '#f8fafc', '#f3f4f6',
 ];
 
 export async function GET(req: NextRequest) {
+  /* 
+    REAL DATABASE IMPLEMENTATION 
+  */
+  // const supabase = getSupabase(cookieStore); 
+  const cookieStore = cookies();
+  const supabase = getSupabase(cookieStore);
+
   const { searchParams } = new URL(req.url);
   const search = searchParams.get('search');
   const lang = searchParams.get('lang');
@@ -54,17 +67,17 @@ export async function GET(req: NextRequest) {
   if (lang && lang !== 'All Languages') {
     query = query.eq('language', lang);
   }
-  
+
   if (diff && diff !== 'All Difficulties') {
     query = query.eq('difficulty', diff);
   }
-  
+
   if (type && type !== 'All') {
-    const typeMap: Record<string, string> = { 
-      'Videos': 'video', 
-      'Articles': 'article', 
-      'PDFs': 'pdf', 
-      'Blogs': 'blog' 
+    const typeMap: Record<string, string> = {
+      'Videos': 'video',
+      'Articles': 'article',
+      'PDFs': 'pdf',
+      'Blogs': 'blog'
     };
     if (typeMap[type]) {
       query = query.eq('type', typeMap[type]);
@@ -83,6 +96,15 @@ export async function GET(req: NextRequest) {
 
 export async function POST(req: NextRequest) {
   try {
+    const cookieStore = cookies();
+    const supabase = getSupabase(cookieStore);
+
+    // Verify user is authenticated
+    const { data: { user }, error: authError } = await supabase.auth.getUser();
+    if (authError || !user) {
+      return NextResponse.json({ error: 'Unauthorized: Please log in to contribute.' }, { status: 401 });
+    }
+
     const formData = await req.formData();
     const title = formData.get('title') as string;
     const creator = formData.get('creator') as string;
@@ -100,10 +122,12 @@ export async function POST(req: NextRequest) {
     if (file && file.size > 0) {
       const fileExt = file.name.split('.').pop();
       const fileName = `${Date.now()}-${Math.random().toString(36).substring(7)}.${fileExt}`;
-      
+
       const arrayBuffer = await file.arrayBuffer();
       const buffer = new Uint8Array(arrayBuffer);
 
+      // Upload uses same authenticated client, RLS on storage should also allow auth users
+      // Note: Assuming 'library_assets' bucket RLS allows INSERT for auth users.
       const { error: uploadError } = await supabase.storage
         .from('library_assets')
         .upload(fileName, buffer, {
@@ -118,7 +142,7 @@ export async function POST(req: NextRequest) {
       const { data: publicUrlData } = supabase.storage
         .from('library_assets')
         .getPublicUrl(fileName);
-        
+
       resourceUrl = publicUrlData.publicUrl;
     }
 
@@ -134,6 +158,7 @@ export async function POST(req: NextRequest) {
         resource_url: resourceUrl,
         thumbnail_color: PASTEL_COLORS[Math.floor(Math.random() * PASTEL_COLORS.length)],
         status: 'pending',
+        submitted_by: user.id // <--- IMPORTANT: Link to user
       })
       .select()
       .single();
@@ -147,7 +172,7 @@ export async function POST(req: NextRequest) {
   } catch (error: any) {
     console.error('API Route Error:', error);
     return NextResponse.json(
-      { error: error.message || 'Internal Server Error' }, 
+      { error: error.message || 'Internal Server Error' },
       { status: 500 }
     );
   }

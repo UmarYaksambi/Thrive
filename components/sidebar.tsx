@@ -69,6 +69,8 @@ export function Sidebar({ userRole: initialRole }: SidebarProps) {
     // Student / Default
     return [
       ...common,
+      // Added Profile link for students to see contributions
+      { icon: Users, label: 'My Profile', href: '/dashboard/profile' },
       { icon: Settings, label: 'Settings', href: '/settings' },
     ];
   };

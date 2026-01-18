@@ -41,15 +41,14 @@ export function AdminDashboard({ userId, userRole }: AdminDashboardProps) {
               <p className="text-xs text-gray-500">{userRole.charAt(0).toUpperCase() + userRole.slice(1)}</p>
             </div>
           </div>
-          
+
           <nav className="space-y-1">
             <button
               onClick={() => setActiveTab('progress')}
-              className={`w-full flex items-center px-4 py-3 text-sm font-medium rounded-lg transition-colors ${
-                activeTab === 'progress' 
-                  ? 'bg-[#f0e9ff] text-[#8b5cf6]' 
+              className={`w-full flex items-center px-4 py-3 text-sm font-medium rounded-lg transition-colors ${activeTab === 'progress'
+                  ? 'bg-[#f0e9ff] text-[#8b5cf6]'
                   : 'text-gray-700 hover:bg-gray-100'
-              }`}
+                }`}
             >
               <svg
                 className="mr-3 h-5 w-5"
@@ -62,14 +61,13 @@ export function AdminDashboard({ userId, userRole }: AdminDashboardProps) {
               </svg>
               Student Progress
             </button>
-            
+
             <button
               onClick={() => setActiveTab('courses')}
-              className={`w-full flex items-center px-4 py-3 text-sm font-medium rounded-lg transition-colors ${
-                activeTab === 'courses' 
-                  ? 'bg-[#f0e9ff] text-[#8b5cf6]' 
+              className={`w-full flex items-center px-4 py-3 text-sm font-medium rounded-lg transition-colors ${activeTab === 'courses'
+                  ? 'bg-[#f0e9ff] text-[#8b5cf6]'
                   : 'text-gray-700 hover:bg-gray-100'
-              }`}
+                }`}
             >
               <svg
                 className="mr-3 h-5 w-5"
@@ -83,14 +81,13 @@ export function AdminDashboard({ userId, userRole }: AdminDashboardProps) {
               </svg>
               Course Management
             </button>
-            
+
             <button
               onClick={() => setActiveTab('documents')}
-              className={`w-full flex items-center px-4 py-3 text-sm font-medium rounded-lg transition-colors ${
-                activeTab === 'documents' 
-                  ? 'bg-[#f0e9ff] text-[#8b5cf6]' 
+              className={`w-full flex items-center px-4 py-3 text-sm font-medium rounded-lg transition-colors ${activeTab === 'documents'
+                  ? 'bg-[#f0e9ff] text-[#8b5cf6]'
                   : 'text-gray-700 hover:bg-gray-100'
-              }`}
+                }`}
             >
               <svg
                 className="mr-3 h-5 w-5"
@@ -134,11 +131,10 @@ export function AdminDashboard({ userId, userRole }: AdminDashboardProps) {
                 <div className="flex items-center justify-between">
                   <p className="text-sm font-medium text-gray-500">{stat.name}</p>
                   <span
-                    className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                      stat.changeType === 'positive' 
-                        ? 'bg-green-100 text-green-800' 
+                    className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${stat.changeType === 'positive'
+                        ? 'bg-green-100 text-green-800'
                         : 'bg-red-100 text-red-800'
-                    }`}
+                      }`}
                   >
                     {stat.change}
                   </span>
@@ -156,7 +152,7 @@ export function AdminDashboard({ userId, userRole }: AdminDashboardProps) {
         <div className="bg-white rounded-xl shadow-sm p-6">
           {activeTab === 'progress' && <StudentProgress userRole={userRole} />}
           {activeTab === 'courses' && <CourseManagement />}
-          {activeTab === 'documents' && <DocumentApproval />}
+          {activeTab === 'documents' && <DocumentApproval currentUserId={userId} />}
         </div>
       </div>
     </div>
