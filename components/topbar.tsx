@@ -10,7 +10,7 @@ interface TopbarProps {
   userHandle?: string;
 }
 
-export function Topbar({ userName = 'Umar Yaksambi', userAvatar, userHandle = '@UmarYaksambi' }: TopbarProps) {
+export function Topbar({ userName = 'Learner', userAvatar, userHandle }: TopbarProps) {
   return (
     <div className="h-20 flex items-center justify-between px-8 bg-white/50 backdrop-blur-sm border-b border-gray-200">
       <Link href="/" className="flex items-center gap-1.5 group">
@@ -38,8 +38,8 @@ export function Topbar({ userName = 'Umar Yaksambi', userAvatar, userHandle = '@
 
       <div className="flex items-center gap-4">
         {/* Changed Bell Button to Downloads Link */}
-        <Link 
-          href="/downloads" 
+        <Link
+          href="/downloads"
           className="w-12 h-12 rounded-full bg-white border-2 border-gray-200 flex items-center justify-center hover:border-[#fccc42] hover:bg-[#fccc42]/5 transition-colors relative group"
           title="My Downloads"
         >
@@ -56,7 +56,7 @@ export function Topbar({ userName = 'Umar Yaksambi', userAvatar, userHandle = '@
           </div>
           <div className="text-sm">
             <div className="font-semibold text-[#151313]">{userName}</div>
-            <div className="text-gray-500 text-xs">{userHandle}</div>
+            {userHandle && <div className="text-gray-500 text-xs">{userHandle}</div>}
           </div>
         </div>
       </div>

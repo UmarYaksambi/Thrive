@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { WifiOff, Wifi } from 'lucide-react';
+import { WifiOff } from 'lucide-react';
 
 export function NetworkStatus() {
   const [isOnline, setIsOnline] = useState(true);
@@ -26,7 +26,7 @@ export function NetworkStatus() {
   return (
     <div className="fixed top-4 right-4 z-50 bg-orange-500 text-white px-4 py-2 rounded-lg shadow-lg flex items-center gap-2 animate-in slide-in-from-top">
       <WifiOff className="w-4 h-4" />
-      <span className="font-semibold text-sm">You're offline</span>
+      <span className="font-semibold text-sm">You&apos;re offline</span>
     </div>
   );
 }

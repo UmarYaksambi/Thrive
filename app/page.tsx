@@ -33,7 +33,8 @@ export default function LandingPage() {
 
   return (
     <div className="min-h-screen from-[#f7f7f5] via-[#fef9f3] to-[#f5f3fe] bg-[linear-gradient(90deg,#e5d6ff40_1px,transparent_1px),linear-gradient(#e5d6ff40_1px,transparent_1px)] bg-[size:34px_34px] overflow-hidden">
-      <style dangerouslySetInnerHTML={{__html: `
+      <style dangerouslySetInnerHTML={{
+        __html: `
         @keyframes rocketFly {
           0% {
             transform: translate(0, 400px) rotate(0deg) scale(0.5);
@@ -411,7 +412,7 @@ export default function LandingPage() {
         </h1>
         <div className="flex items-center gap-4">
           <Link
-            href="/dashboard"
+            href="/login"
             className="px-6 py-2.5 text-[#151313] font-semibold hover:text-[#C2AAFB] transition-colors"
           >
             Sign In
@@ -431,33 +432,33 @@ export default function LandingPage() {
           <div className="absolute left-0 top-0 w-64 h-full pointer-events-none hidden lg:block">
             {/* Morphing blobs */}
             <div className="morph-blob blob-1"></div>
-            
+
             {/* Rocket with spiral trail */}
             <div className="rocket-container">
               <svg className="rocket" width="60" height="60" viewBox="0 0 60 60" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <path d="M30 5L35 20L30 15L25 20L30 5Z" fill="#FF5734"/>
-                <ellipse cx="30" cy="25" rx="8" ry="12" fill="#D8C4FB"/>
-                <circle cx="30" cy="22" r="3" fill="#151313"/>
-                <path d="M22 30L18 40L22 35L22 30Z" fill="#C2AAFB"/>
-                <path d="M38 30L42 40L38 35L38 30Z" fill="#C2AAFB"/>
-                <rect x="27" y="35" width="6" height="8" rx="1" fill="#151313"/>
+                <path d="M30 5L35 20L30 15L25 20L30 5Z" fill="#FF5734" />
+                <ellipse cx="30" cy="25" rx="8" ry="12" fill="#D8C4FB" />
+                <circle cx="30" cy="22" r="3" fill="#151313" />
+                <path d="M22 30L18 40L22 35L22 30Z" fill="#C2AAFB" />
+                <path d="M38 30L42 40L38 35L38 30Z" fill="#C2AAFB" />
+                <rect x="27" y="35" width="6" height="8" rx="1" fill="#151313" />
               </svg>
               <svg className="trail" width="200" height="400" viewBox="0 0 200 400">
-                <path 
-                  d="M100,350 Q80,300 100,250 T100,150 T100,50" 
-                  stroke="#D8C4FB" 
-                  strokeWidth="4" 
-                  fill="none" 
+                <path
+                  d="M100,350 Q80,300 100,250 T100,150 T100,50"
+                  stroke="#D8C4FB"
+                  strokeWidth="4"
+                  fill="none"
                   strokeDasharray="1000"
                   strokeDashoffset="1000"
                   opacity="0.7"
                   strokeLinecap="round"
                 />
-                <path 
-                  d="M100,350 Q120,300 100,250 T100,150 T100,50" 
-                  stroke="#FF5734" 
-                  strokeWidth="3" 
-                  fill="none" 
+                <path
+                  d="M100,350 Q120,300 100,250 T100,150 T100,50"
+                  stroke="#FF5734"
+                  strokeWidth="3"
+                  fill="none"
                   strokeDasharray="1000"
                   strokeDashoffset="1000"
                   opacity="0.5"
@@ -465,7 +466,7 @@ export default function LandingPage() {
                 />
               </svg>
             </div>
-            
+
             {/* Enhanced floating stars/sparkles */}
             <div className="pulse-ring pulse-ring-1"></div>
             <div className="pulse-ring pulse-ring-2"></div>
@@ -473,27 +474,27 @@ export default function LandingPage() {
             <div className="star star-2">✨</div>
             <div className="star star-3">💫</div>
             <div className="star star-4">🌟</div>
-                        
+
             {/* Pencil */}
             <div className="float-item-alt pencil">
               <div className="text-4xl float-gentle">✏️</div>
             </div>
-            
+
             {/* Sparkle effects */}
             <div className="sparkle-item sparkle-1">✦</div>
           </div>
 
-            {/* Right side animation */}
-            <div className="absolute right-0 top-0 w-64 h-full pointer-events-none hidden lg:block">
-              {/* Morphing blob */}
-              <div className="morph-blob blob-2"></div>
-              
+          {/* Right side animation */}
+          <div className="absolute right-0 top-0 w-64 h-full pointer-events-none hidden lg:block">
+            {/* Morphing blob */}
+            <div className="morph-blob blob-2"></div>
+
             {/* Floating book icon */}
             <div className="float-item book-1">
               <div className="text-5xl float-gentle">📖</div>
             </div>
 
-            
+
             {/* Brain icon */}
             <div className="relative">
               <div className="absolute right-[15%] top-[70%] float-item-alt brain-icon">
@@ -501,12 +502,12 @@ export default function LandingPage() {
               </div>
             </div>
 
-            
+
             {/* Lightbulb with glow */}
             <div className="float-item lightbulb">
-              <div className="text-6xl float-gentle" style={{filter: 'drop-shadow(0 0 20px rgba(255, 215, 0, 0.6))'}}>💡</div>
+              <div className="text-6xl float-gentle" style={{ filter: 'drop-shadow(0 0 20px rgba(255, 215, 0, 0.6))' }}>💡</div>
             </div>
-            
+
             {/* Certificate with bounce */}
             <div className="float-item-bounce certificate">
               <div className="w-20 h-14 bg-gradient-to-br from-[#FFE5B4] to-[#FFD700] rounded-lg shadow-xl border-3 border-[#FF5734] flex items-center justify-center float-gentle relative">
@@ -514,7 +515,7 @@ export default function LandingPage() {
                 <div className="absolute -top-2 -right-2 w-6 h-6 bg-[#FF5734] rounded-full flex items-center justify-center text-white text-xs font-bold">★</div>
               </div>
             </div>
-            
+
             {/* Enhanced orbiting dots with pulse rings */}
             <div className="orbit-container">
               <div className="orbit-dot dot-1"></div>
@@ -522,7 +523,7 @@ export default function LandingPage() {
               <div className="orbit-dot dot-3"></div>
               <div className="orbit-dot dot-4"></div>
             </div>
-            
+
             {/* Additional sparkles */}
             <div className="sparkle-item sparkle-2">✦</div>
             <div className="sparkle-item sparkle-3">✦</div>

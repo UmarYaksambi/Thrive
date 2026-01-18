@@ -1,4 +1,5 @@
 import { cookies } from 'next/headers';
+import Link from 'next/link';
 import { createServerClient } from '@supabase/ssr';
 import { redirect } from 'next/navigation';
 import { Sidebar } from '@/components/sidebar';
@@ -100,15 +101,18 @@ const nextLessons = [
 
 export default async function DashboardPage() {
   const cookieStore = cookies();
-  
+
   // Initialize the Supabase Server Client
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
     {
       cookies: {
-        get(name: string) {
-          return cookieStore.get(name)?.value;
+        getAll() {
+          return cookieStore.getAll();
+        },
+        setAll(cookiesToSet) {
+          // Cookie set logic (usually done in middleware for server components)
         },
       },
     }
@@ -129,13 +133,58 @@ export default async function DashboardPage() {
     .eq('id', user.id)
     .single();
 
+  // 4. Fetch User Role for Sidebar
+  const { data: role } = await supabase.rpc('get_user_role');
+
+  // 5. Fetch Real Enrollments/Courses
+  const { data: enrollments } = await supabase
+    .from('enrollments')
+    .select(`
+      id,
+      progress_percent,
+      course:courses (
+        id,
+        title,
+        category,
+        thumbnail_url,
+        description
+      )
+    `)
+    .eq('user_id', user.id);
+
+  // Map to CourseCard format
+  const myCourses = (enrollments || []).map((enrollment: any) => ({
+    id: enrollment.course.id,
+    title: enrollment.course.title,
+    category: enrollment.course.category || 'General',
+    progress: enrollment.progress_percent || 0,
+    // We mock total/completed lessons for now as that requires deep counting
+    totalLessons: 20,
+    completedLessons: Math.round(((enrollment.progress_percent || 0) / 100) * 20),
+    colorCode: '#be94f5', // Default color, or derive from category
+    students: [], // Could fetch this if needed, but skipping for performance
+  }));
+
+  // Mock next lessons for now (or fetch from `lessons` table if linked)
+  // For MVP, we'll keep the static "next lessons" or empty state if no courses
+  const nextLessons = [
+    {
+      id: '1',
+      title: '01. Introduction',
+      subtitle: myCourses[0]?.title || 'Your Course',
+      teacher: 'Thrive Instructor',
+      avatar: '',
+      duration: '15 min',
+    }
+  ];
+
   return (
     <div className="min-h-screen bg-[#f7f7f5]">
-      <Sidebar />
+      <Sidebar userRole={role as any} />
       <div className="ml-20">
         {/* 4. Pass the real user data to the Topbar */}
-        <Topbar 
-          userName={profile?.full_name || 'Learner'} 
+        <Topbar
+          userName={profile?.full_name || 'Learner'}
           userHandle={profile?.email?.split('@')[0] ? `@${profile.email.split('@')[0]}` : undefined}
           userAvatar={profile?.avatar_url}
         />
@@ -148,23 +197,23 @@ export default async function DashboardPage() {
                 <button className="px-6 py-2 bg-[#151313] text-white rounded-full font-semibold text-sm hover:bg-[#2a2828] transition-colors">
                   All courses
                 </button>
-                <button className="px-6 py-2 bg-white border-2 border-gray-200 text-[#151313] rounded-full font-semibold text-sm hover:border-[#151313] transition-colors">
-                  Marketing
-                </button>
-                <button className="px-6 py-2 bg-white border-2 border-gray-200 text-[#151313] rounded-full font-semibold text-sm hover:border-[#151313] transition-colors">
-                  Computer Science
-                </button>
-                <button className="px-6 py-2 bg-white border-2 border-gray-200 text-[#151313] rounded-full font-semibold text-sm hover:border-[#151313] transition-colors">
-                  Psychology
-                </button>
+                {/* Filters could be dynamic */}
               </div>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
-              {mockCourses.map((course) => (
-                <CourseCard key={course.id} {...course} />
-              ))}
-            </div>
+            {myCourses.length > 0 ? (
+              <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+                {myCourses.map((course) => (
+                  <CourseCard key={course.id} {...course} />
+                ))}
+              </div>
+            ) : (
+              <div className="py-12 text-center bg-white rounded-3xl border-2 border-dashed border-gray-200">
+                <p className="text-gray-500 text-lg mb-4">You haven't enrolled in any courses yet.</p>
+                <Link href="/library" className="px-6 py-3 bg-[#fccc42] text-[#151313] font-bold rounded-full">Explore Library</Link>
+              </div>
+            )}
+
           </div>
 
           <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">

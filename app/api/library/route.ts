@@ -44,6 +44,7 @@ export async function GET(req: NextRequest) {
   let query = supabase
     .from('library_items')
     .select('*')
+    .eq('status', 'approved')
     .order('created_at', { ascending: false });
 
   if (search) {
@@ -132,6 +133,7 @@ export async function POST(req: NextRequest) {
         tags,
         resource_url: resourceUrl,
         thumbnail_color: PASTEL_COLORS[Math.floor(Math.random() * PASTEL_COLORS.length)],
+        status: 'pending',
       })
       .select()
       .single();
