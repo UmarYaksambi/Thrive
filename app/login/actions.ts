@@ -32,6 +32,7 @@ export async function login(formData: FormData) {
     const supabase = getSupabase()
     const email = formData.get('email') as string
     const password = formData.get('password') as string
+    const selectedRole = formData.get('role') as string // 'student' or 'teacher'
 
     const { error } = await supabase.auth.signInWithPassword({ email, password })
 
@@ -39,16 +40,38 @@ export async function login(formData: FormData) {
         redirect(`/login?error=${encodeURIComponent(error.message)}`)
     }
 
-    // Role-based redirection
+    // Get the user's actual role from database
     const { data: role } = await supabase.rpc('get_user_role')
-    const roleValue = String(role || '')
+    const actualRole = String(role || '')
 
-    if (roleValue === 'admin' || roleValue === 'supervisor') {
-        redirect('/admin')
-    } else if (roleValue === 'teacher') {
+    // Validate role matches what they selected
+    if (selectedRole === 'student') {
+        // Student login - should NOT be admin, supervisor, or teacher
+        if (['admin', 'supervisor', 'teacher'].includes(actualRole)) {
+            // Sign them out and show error
+            await supabase.auth.signOut()
+            redirect('/login?error=This email is not registered as a student. Please use the correct login portal.')
+        }
+        redirect('/dashboard')
+    } else if (selectedRole === 'teacher') {
+        // Teacher login - must be teacher (admins should use admin portal)
+        if (actualRole !== 'teacher') {
+            await supabase.auth.signOut()
+            if (actualRole === 'admin' || actualRole === 'supervisor') {
+                redirect('/login?error=Admin accounts should use the Admin Access portal at the bottom of the homepage.')
+            }
+            redirect('/login?error=This email is not registered as a teacher.')
+        }
         redirect('/teacher')
     } else {
-        redirect('/dashboard')
+        // Fallback: role-based redirection (for any other case)
+        if (actualRole === 'admin' || actualRole === 'supervisor') {
+            redirect('/admin')
+        } else if (actualRole === 'teacher') {
+            redirect('/teacher')
+        } else {
+            redirect('/dashboard')
+        }
     }
 }
 

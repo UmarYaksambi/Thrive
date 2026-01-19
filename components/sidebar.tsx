@@ -71,6 +71,7 @@ export function Sidebar({ userRole: initialRole }: SidebarProps) {
       ...common,
       // Added Profile link for students to see contributions
       { icon: Users, label: 'My Profile', href: '/dashboard/profile' },
+      { icon: GraduationCap, label: 'My Classrooms', href: '/dashboard/classrooms' },
       { icon: Settings, label: 'Settings', href: '/settings' },
     ];
   };
@@ -80,7 +81,7 @@ export function Sidebar({ userRole: initialRole }: SidebarProps) {
 
   return (
     <div className="fixed left-0 top-0 h-screen w-20 bg-[#151313] flex flex-col items-center py-8 z-50 transition-all duration-300">
-      <div className="flex flex-col items-center gap-4 flex-1">
+      <div className="flex flex-col items-center gap-4 flex-1 w-full overflow-y-auto px-2 scrollbar-none">
         {links.map((item, index) => {
           const Icon = item.icon;
           const isActive = pathname === item.href || (pathname.startsWith(item.href + '/') && item.href !== '/dashboard' && item.href !== '/admin');

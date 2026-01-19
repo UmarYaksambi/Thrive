@@ -627,6 +627,12 @@ export default function LandingPage() {
       <footer className="border-t border-gray-200 mt-20 py-8">
         <div className="max-w-7xl mx-auto px-6 text-center text-gray-600">
           <p>&copy; 2025 Thrive. Empowering learners worldwide.</p>
+          <Link
+            href="/admin/signup"
+            className="mt-4 inline-block text-sm text-gray-400 hover:text-[#D8C4FB] transition-colors"
+          >
+            Admin Access →
+          </Link>
         </div>
       </footer>
     </div>
