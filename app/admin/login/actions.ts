@@ -1,11 +1,11 @@
 'use server'
 
 import { createServerClient, type CookieOptions } from '@supabase/ssr'
-import { cookies } from 'next/headers'
+import { cookies, type UnsafeUnwrappedCookies } from 'next/headers';
 import { redirect } from 'next/navigation'
 
 function getSupabase() {
-  const cookieStore = cookies()
+  const cookieStore = (cookies() as unknown as UnsafeUnwrappedCookies)
   return createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,

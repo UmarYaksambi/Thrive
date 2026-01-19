@@ -1,6 +1,9 @@
 import { cookies } from 'next/headers';
 import { NextResponse } from 'next/server';
-import { createServerClient, type CookieOptions } from '@supabase/ssr';
+import {
+  createServerClient,
+  type CookieOptions,
+} from '@supabase/ssr';
 
 function normalizeTopic(topic: string): string {
   return topic
@@ -11,7 +14,7 @@ function normalizeTopic(topic: string): string {
 }
 
 export async function POST(request: Request) {
-  const cookieStore = cookies();
+  const cookieStore = await cookies();
 
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -21,7 +24,11 @@ export async function POST(request: Request) {
         get(name: string) {
           return cookieStore.get(name)?.value;
         },
-        set(name: string, value: string, options: CookieOptions) {
+        set(
+          name: string,
+          value: string,
+          options: CookieOptions
+        ) {
           cookieStore.set({ name, value, ...options });
         },
         remove(name: string, options: CookieOptions) {
@@ -42,12 +49,15 @@ export async function POST(request: Request) {
 
   // --- FIX: Add Fallback User for Development ---
   if (!user) {
-    user = { id: '41162d70-c555-4503-b84a-c925380d4f2c' } as any;
+    user = {
+      id: '41162d70-c555-4503-b84a-c925380d4f2c',
+    } as any;
   }
   // ---------------------------------------------
 
   try {
-    const { topicName, subtopicName } = await request.json();
+    const { topicName, subtopicName } =
+      await request.json();
 
     if (!topicName || !subtopicName) {
       return NextResponse.json(
@@ -58,40 +68,53 @@ export async function POST(request: Request) {
 
     const normalizedTopic = normalizeTopic(topicName);
 
-    const { data: record, error: fetchError } = await supabase
-      .from('topic_mastery')
-      .select('*')
-      .eq('user_id', user!.id)
-      .eq('topic_name', normalizedTopic)
-      .maybeSingle();
+    const { data: record, error: fetchError } =
+      await supabase
+        .from('topic_mastery')
+        .select('*')
+        .eq('user_id', user!.id)
+        .eq('topic_name', normalizedTopic)
+        .maybeSingle();
 
     if (fetchError || !record) {
       return NextResponse.json(
-        { error: 'Mastery track not found. Create it first.' },
+        {
+          error:
+            'Mastery track not found. Create it first.',
+        },
         { status: 404 }
       );
     }
 
-    const existingSubtopics = Array.isArray(record.subtopics)
+    const existingSubtopics = Array.isArray(
+      record.subtopics
+    )
       ? record.subtopics
       : [];
 
     let found = false;
 
     // Mark specific subtopic as completed
-    const updatedSubtopics = existingSubtopics.map((sub: any) => {
-      // Use includes or looser matching to catch AI variations
-      if (
-        typeof sub?.name === 'string' &&
-        (sub.name.toLowerCase() === subtopicName.toLowerCase() || 
-         sub.name.toLowerCase().includes(subtopicName.toLowerCase()) ||
-         subtopicName.toLowerCase().includes(sub.name.toLowerCase()))
-      ) {
-        found = true;
-        return { ...sub, completed: true };
+    const updatedSubtopics = existingSubtopics.map(
+      (sub: any) => {
+        // Use includes or looser matching to catch AI variations
+        if (
+          typeof sub?.name === 'string' &&
+          (sub.name.toLowerCase() ===
+            subtopicName.toLowerCase() ||
+            sub.name
+              .toLowerCase()
+              .includes(subtopicName.toLowerCase()) ||
+            subtopicName
+              .toLowerCase()
+              .includes(sub.name.toLowerCase()))
+        ) {
+          found = true;
+          return { ...sub, completed: true };
+        }
+        return sub;
       }
-      return sub;
-    });
+    );
 
     // Optional: If AI made up a new valid subtopic, add it (or you can ignore this block)
     if (!found) {

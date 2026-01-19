@@ -2,8 +2,8 @@ import { cookies } from 'next/headers';
 import { createServerClient } from '@supabase/ssr';
 import { NextRequest, NextResponse } from 'next/server';
 
-function createSupabase() {
-  const cookieStore = cookies();
+async function createSupabase() {
+  const cookieStore = await cookies();
   return createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
@@ -38,17 +38,17 @@ function createServiceSupabase() {
 // POST: Remove a student from classroom
 export async function POST(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const classroomId = params.id;
+    const { id: classroomId } = await params;
     const { userId } = await request.json();
 
     if (!userId) {
       return NextResponse.json({ error: 'User ID is required' }, { status: 400 });
     }
 
-    const supabase = createSupabase();
+    const supabase = await createSupabase();
     const { data: { user }, error: authError } = await supabase.auth.getUser();
 
     if (authError || !user) {

@@ -9,7 +9,7 @@ export async function GET(request: NextRequest) {
     const status = searchParams.get('status') || 'pending';
     const search = searchParams.get('search') || '';
 
-    const cookieStore = cookies();
+    const cookieStore = await cookies();
 
     const supabase = createServerClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -110,7 +110,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Rejection reason is required' }, { status: 400 });
     }
 
-    const cookieStore = cookies();
+    const cookieStore = await cookies();
 
     const supabase = createServerClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL!,

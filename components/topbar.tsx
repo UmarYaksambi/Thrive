@@ -10,10 +10,21 @@ interface TopbarProps {
   userHandle?: string;
 }
 
+<<<<<<< HEAD
 export function Topbar({ userName = 'Learner', userAvatar, userHandle }: TopbarProps) {
+=======
+export function Topbar({
+  userName = 'Umar Yaksambi',
+  userAvatar,
+  userHandle = '@UmarYaksambi',
+}: TopbarProps) {
+>>>>>>> origin/main
   return (
     <div className="h-20 flex items-center justify-between px-8 bg-white/50 backdrop-blur-sm border-b border-gray-200">
-      <Link href="/" className="flex items-center gap-1.5 group">
+      <Link
+        href="/"
+        className="flex items-center gap-1.5 group"
+      >
         <span className="text-sm text-gray-500 tracking-wide group-hover:text-gray-700 transition-colors">
           Welcome to
         </span>
@@ -49,14 +60,27 @@ export function Topbar({ userName = 'Learner', userAvatar, userHandle }: TopbarP
         <div className="flex items-center gap-3">
           <div className="w-12 h-12 rounded-full bg-gradient-to-br from-[#be94f5] to-[#ff5734] flex items-center justify-center">
             {userAvatar ? (
-              <img src={userAvatar} alt={userName} className="w-full h-full rounded-full object-cover" />
+              <img
+                src={userAvatar}
+                alt={userName}
+                className="w-full h-full rounded-full object-cover"
+              />
             ) : (
               <User className="w-6 h-6 text-white" />
             )}
           </div>
           <div className="text-sm">
+<<<<<<< HEAD
             <div className="font-semibold text-[#151313]">{userName}</div>
             {userHandle && <div className="text-gray-500 text-xs">{userHandle}</div>}
+=======
+            <div className="font-semibold text-[#151313]">
+              {userName}
+            </div>
+            <div className="text-gray-500 text-xs">
+              {userHandle}
+            </div>
+>>>>>>> origin/main
           </div>
         </div>
       </div>

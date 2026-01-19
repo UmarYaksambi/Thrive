@@ -1,4 +1,5 @@
-'use client';
+'use client';;
+import { use } from "react";
 
 import Link from 'next/link';
 import { Anton } from 'next/font/google';
@@ -9,11 +10,12 @@ import { useSearchParams } from 'next/navigation';
 
 const anton = Anton({ subsets: ['latin'], weight: '400' });
 
-export default function AdminLoginPage({
-  searchParams,
-}: {
-  searchParams: { error?: string };
-}) {
+export default function AdminLoginPage(
+  props: {
+    searchParams: Promise<{ error?: string }>;
+  }
+) {
+  const searchParams = use(props.searchParams);
   return (
     <div className="min-h-screen bg-[#151313] flex items-center justify-center p-6">
       <div className="w-full max-w-md bg-white rounded-[2rem] p-10 shadow-2xl border border-gray-100 relative overflow-hidden">

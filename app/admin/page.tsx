@@ -6,7 +6,7 @@ import { Topbar } from '@/components/topbar';
 import { AdminDashboard } from '@/components/admin/admin-dashboard';
 
 export default async function AdminPage() {
-  const cookieStore = cookies();
+  const cookieStore = await cookies();
 
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,

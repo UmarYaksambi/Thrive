@@ -3,13 +3,19 @@
 import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { Search, BookOpen, Brain, Users, Award } from 'lucide-react';
+import {
+  Search,
+  BookOpen,
+  Brain,
+  Users,
+  Award,
+} from 'lucide-react';
 import { Input } from '@/components/ui/input';
-import { Anton } from "next/font/google";
+import { Anton } from 'next/font/google';
 
 const anton = Anton({
-  subsets: ["latin"],
-  weight: "400",
+  subsets: ['latin'],
+  weight: '400',
 });
 
 export default function LandingPage() {
@@ -20,7 +26,10 @@ export default function LandingPage() {
       router.push('/downloads');
     };
 
-    if (typeof navigator !== 'undefined' && !navigator.onLine) {
+    if (
+      typeof navigator !== 'undefined' &&
+      !navigator.onLine
+    ) {
       handleOffline();
     }
 
@@ -33,8 +42,14 @@ export default function LandingPage() {
 
   return (
     <div className="min-h-screen from-[#f7f7f5] via-[#fef9f3] to-[#f5f3fe] bg-[linear-gradient(90deg,#e5d6ff40_1px,transparent_1px),linear-gradient(#e5d6ff40_1px,transparent_1px)] bg-[size:34px_34px] overflow-hidden">
+<<<<<<< HEAD
       <style dangerouslySetInnerHTML={{
         __html: `
+=======
+      <style
+        dangerouslySetInnerHTML={{
+          __html: `
+>>>>>>> origin/main
         @keyframes rocketFly {
           0% {
             transform: translate(0, 400px) rotate(0deg) scale(0.5);
@@ -403,7 +418,9 @@ export default function LandingPage() {
           top: 70%;
           animation-delay: 2s, 1s;
         }
-      `}} />
+      `,
+        }}
+      />
 
       <nav className="p-6 flex items-center justify-between max-w-7xl mx-auto">
         <h1 className="text-3xl font-bold">
@@ -435,6 +452,7 @@ export default function LandingPage() {
 
             {/* Rocket with spiral trail */}
             <div className="rocket-container">
+<<<<<<< HEAD
               <svg className="rocket" width="60" height="60" viewBox="0 0 60 60" fill="none" xmlns="http://www.w3.org/2000/svg">
                 <path d="M30 5L35 20L30 15L25 20L30 5Z" fill="#FF5734" />
                 <ellipse cx="30" cy="25" rx="8" ry="12" fill="#D8C4FB" />
@@ -444,6 +462,56 @@ export default function LandingPage() {
                 <rect x="27" y="35" width="6" height="8" rx="1" fill="#151313" />
               </svg>
               <svg className="trail" width="200" height="400" viewBox="0 0 200 400">
+=======
+              <svg
+                className="rocket"
+                width="60"
+                height="60"
+                viewBox="0 0 60 60"
+                fill="none"
+                xmlns="http://www.w3.org/2000/svg"
+              >
+                <path
+                  d="M30 5L35 20L30 15L25 20L30 5Z"
+                  fill="#FF5734"
+                />
+                <ellipse
+                  cx="30"
+                  cy="25"
+                  rx="8"
+                  ry="12"
+                  fill="#D8C4FB"
+                />
+                <circle
+                  cx="30"
+                  cy="22"
+                  r="3"
+                  fill="#151313"
+                />
+                <path
+                  d="M22 30L18 40L22 35L22 30Z"
+                  fill="#C2AAFB"
+                />
+                <path
+                  d="M38 30L42 40L38 35L38 30Z"
+                  fill="#C2AAFB"
+                />
+                <rect
+                  x="27"
+                  y="35"
+                  width="6"
+                  height="8"
+                  rx="1"
+                  fill="#151313"
+                />
+              </svg>
+              <svg
+                className="trail"
+                width="200"
+                height="400"
+                viewBox="0 0 200 400"
+              >
+>>>>>>> origin/main
                 <path
                   d="M100,350 Q80,300 100,250 T100,150 T100,50"
                   stroke="#D8C4FB"
@@ -477,7 +545,9 @@ export default function LandingPage() {
 
             {/* Pencil */}
             <div className="float-item-alt pencil">
-              <div className="text-4xl float-gentle">✏️</div>
+              <div className="text-4xl float-gentle">
+                ✏️
+              </div>
             </div>
 
             {/* Sparkle effects */}
@@ -491,6 +561,7 @@ export default function LandingPage() {
 
             {/* Floating book icon */}
             <div className="float-item book-1">
+<<<<<<< HEAD
               <div className="text-5xl float-gentle">📖</div>
             </div>
 
@@ -506,13 +577,42 @@ export default function LandingPage() {
             {/* Lightbulb with glow */}
             <div className="float-item lightbulb">
               <div className="text-6xl float-gentle" style={{ filter: 'drop-shadow(0 0 20px rgba(255, 215, 0, 0.6))' }}>💡</div>
+=======
+              <div className="text-5xl float-gentle">
+                📖
+              </div>
+            </div>
+
+            {/* Brain icon */}
+            <div className="relative">
+              <div className="absolute right-[15%] top-[70%] float-item-alt brain-icon">
+                <div className="text-5xl float-gentle-delayed">
+                  🧠
+                </div>
+              </div>
+            </div>
+
+            {/* Lightbulb with glow */}
+            <div className="float-item lightbulb">
+              <div
+                className="text-6xl float-gentle"
+                style={{
+                  filter:
+                    'drop-shadow(0 0 20px rgba(255, 215, 0, 0.6))',
+                }}
+              >
+                💡
+              </div>
+>>>>>>> origin/main
             </div>
 
             {/* Certificate with bounce */}
             <div className="float-item-bounce certificate">
               <div className="w-20 h-14 bg-gradient-to-br from-[#FFE5B4] to-[#FFD700] rounded-lg shadow-xl border-3 border-[#FF5734] flex items-center justify-center float-gentle relative">
                 <div className="text-3xl">🏆</div>
-                <div className="absolute -top-2 -right-2 w-6 h-6 bg-[#FF5734] rounded-full flex items-center justify-center text-white text-xs font-bold">★</div>
+                <div className="absolute -top-2 -right-2 w-6 h-6 bg-[#FF5734] rounded-full flex items-center justify-center text-white text-xs font-bold">
+                  ★
+                </div>
               </div>
             </div>
 
@@ -529,7 +629,9 @@ export default function LandingPage() {
             <div className="sparkle-item sparkle-3">✦</div>
           </div>
 
-          <h2 className={`${anton.className} text-6xl font-bold text-[#151313] mb-6 leading-tight`}>
+          <h2
+            className={`${anton.className} text-6xl font-bold text-[#151313] mb-6 leading-tight`}
+          >
             Your Personalized
             <br />
             <span className="text-[#D8C4FB] text-8xl tracking-[-0.04em] leading-none">
@@ -539,7 +641,9 @@ export default function LandingPage() {
             Starts Here
           </h2>
           <p className="text-xl text-gray-600 mb-12 max-w-2xl mx-auto">
-            Master any skill with AI-powered personalized learning paths, expert-led courses, and real-time progress tracking.
+            Master any skill with AI-powered personalized
+            learning paths, expert-led courses, and
+            real-time progress tracking.
           </p>
 
           <div className="max-w-2xl mx-auto mb-8">
@@ -556,8 +660,16 @@ export default function LandingPage() {
           </div>
 
           <div className="flex items-center justify-center gap-4 flex-wrap">
-            <span className="text-gray-500 font-medium">Popular:</span>
-            {['React.js', 'Python', 'UI/UX Design', 'Public Speaking', 'Data Science'].map((topic) => (
+            <span className="text-gray-500 font-medium">
+              Popular:
+            </span>
+            {[
+              'React.js',
+              'Python',
+              'UI/UX Design',
+              'Public Speaking',
+              'Data Science',
+            ].map((topic) => (
               <button
                 key={topic}
                 className="px-6 py-2 bg-white border-2 border-gray-200 rounded-full font-semibold text-[#151313] hover:border-[#ff5734] hover:text-[#ff5734] transition-colors"
@@ -573,25 +685,29 @@ export default function LandingPage() {
             {
               icon: Brain,
               title: 'AI-Powered Learning',
-              description: 'Get personalized learning paths tailored to your goals and pace',
+              description:
+                'Get personalized learning paths tailored to your goals and pace',
               color: 'learnify-purple',
             },
             {
               icon: BookOpen,
               title: 'Expert-Led Courses',
-              description: 'Learn from industry professionals with real-world experience',
+              description:
+                'Learn from industry professionals with real-world experience',
               color: 'learnify-yellow',
             },
             {
               icon: Users,
               title: 'Community Support',
-              description: 'Join thousands of learners and grow together',
+              description:
+                'Join thousands of learners and grow together',
               color: 'learnify-blue',
             },
             {
               icon: Award,
               title: 'Track Progress',
-              description: 'Monitor your achievements and stay motivated',
+              description:
+                'Monitor your achievements and stay motivated',
               color: 'learnify-coral',
             },
           ].map((feature, index) => {
@@ -604,8 +720,12 @@ export default function LandingPage() {
                 <div className="w-16 h-16 bg-[#151313] rounded-2xl flex items-center justify-center mb-4">
                   <Icon className="w-8 h-8 text-white" />
                 </div>
-                <h3 className="text-xl font-bold text-[#151313] mb-2">{feature.title}</h3>
-                <p className="text-[#151313]/80">{feature.description}</p>
+                <h3 className="text-xl font-bold text-[#151313] mb-2">
+                  {feature.title}
+                </h3>
+                <p className="text-[#151313]/80">
+                  {feature.description}
+                </p>
               </div>
             );
           })}
@@ -626,6 +746,7 @@ export default function LandingPage() {
 
       <footer className="border-t border-gray-200 mt-20 py-8">
         <div className="max-w-7xl mx-auto px-6 text-center text-gray-600">
+<<<<<<< HEAD
           <p>&copy; 2025 Thrive. Empowering learners worldwide.</p>
           <Link
             href="/admin/signup"
@@ -633,6 +754,12 @@ export default function LandingPage() {
           >
             Admin Access →
           </Link>
+=======
+          <p>
+            &copy; 2025 Thrive. Empowering learners
+            worldwide.
+          </p>
+>>>>>>> origin/main
         </div>
       </footer>
     </div>

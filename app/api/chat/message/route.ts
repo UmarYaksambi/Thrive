@@ -1,37 +1,65 @@
-import { createServerClient, type CookieOptions } from '@supabase/ssr';
+import {
+  createServerClient,
+  type CookieOptions,
+} from '@supabase/ssr';
 import { cookies } from 'next/headers';
 import { NextResponse } from 'next/server';
 import OpenAI from 'openai';
 import type { ChatCompletionMessageParam } from 'openai/resources/chat/completions';
 
-const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+const openai = new OpenAI({
+  apiKey: process.env.OPENAI_API_KEY,
+});
 
 export async function POST(request: Request) {
-  const cookieStore = cookies();
+  const cookieStore = await cookies();
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
     {
       cookies: {
-        get(name: string) { return cookieStore.get(name)?.value; },
-        set(name: string, value: string, options: CookieOptions) { cookieStore.set({ name, value, ...options }); },
-        remove(name: string, options: CookieOptions) { cookieStore.set({ name, value: '', ...options }); },
+        get(name: string) {
+          return cookieStore.get(name)?.value;
+        },
+        set(
+          name: string,
+          value: string,
+          options: CookieOptions
+        ) {
+          cookieStore.set({ name, value, ...options });
+        },
+        remove(name: string, options: CookieOptions) {
+          cookieStore.set({ name, value: '', ...options });
+        },
       },
     }
   );
 
-  let { data: { user } } = await supabase.auth.getUser();
-  if (!user) user = { id: '41162d70-c555-4503-b84a-c925380d4f2c' } as any;
+  let {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user)
+    user = {
+      id: '41162d70-c555-4503-b84a-c925380d4f2c',
+    } as any;
 
   try {
-    const { message, sessionId, activeTopic } = await request.json();
-    if (!message) return NextResponse.json({ error: 'Message required' }, { status: 400 });
+    const { message, sessionId, activeTopic } =
+      await request.json();
+    if (!message)
+      return NextResponse.json(
+        { error: 'Message required' },
+        { status: 400 }
+      );
 
     let currentSessionId = sessionId;
     if (!currentSessionId) {
       const { data: session } = await supabase
         .from('chat_sessions')
-        .insert({ user_id: user!.id, topic: 'General Chat' })
+        .insert({
+          user_id: user!.id,
+          topic: 'General Chat',
+        })
         .select('id')
         .single();
       currentSessionId = session?.id;
@@ -52,15 +80,16 @@ export async function POST(request: Request) {
       .order('created_at', { ascending: true })
       .limit(10);
 
-    const conversationHistory: ChatCompletionMessageParam[] = (history || []).map(msg => ({
-      role: msg.sender === 'user' ? 'user' : 'assistant',
-      content: msg.message_text
-    })) as ChatCompletionMessageParam[];
+    const conversationHistory: ChatCompletionMessageParam[] =
+      (history || []).map((msg) => ({
+        role: msg.sender === 'user' ? 'user' : 'assistant',
+        content: msg.message_text,
+      })) as ChatCompletionMessageParam[];
 
     // --- CONTEXT BUILDER ---
     let masteryContext = '';
     let isMasteryActive = false;
-    
+
     if (activeTopic) {
       const { data: masteryData } = await supabase
         .from('topic_mastery')
@@ -71,10 +100,12 @@ export async function POST(request: Request) {
 
       if (masteryData) {
         isMasteryActive = true;
-        
+
         // Find current incomplete subtopic index
         const subtopics = masteryData.subtopics || [];
-        const currentIndex = subtopics.findIndex((s: any) => !s.completed);
+        const currentIndex = subtopics.findIndex(
+          (s: any) => !s.completed
+        );
         const currentLesson = subtopics[currentIndex];
         const nextLesson = subtopics[currentIndex + 1]; // Look ahead one step
 
@@ -179,15 +210,17 @@ export async function POST(request: Request) {
     - Output tags must be exact.
     `;
 
-    const completion = await openai.chat.completions.create({
-      model: 'gpt-4',
-      stream: true,
-      messages: [
-        { role: 'system', content: systemPrompt },
-        ...conversationHistory.slice(-8),
-        { role: 'user', content: message }
-      ],
-    });
+    const completion = await openai.chat.completions.create(
+      {
+        model: 'gpt-4',
+        stream: true,
+        messages: [
+          { role: 'system', content: systemPrompt },
+          ...conversationHistory.slice(-8),
+          { role: 'user', content: message },
+        ],
+      }
+    );
 
     const encoder = new TextEncoder();
     let fullAiResponse = '';
@@ -196,15 +229,16 @@ export async function POST(request: Request) {
       async start(controller) {
         try {
           for await (const chunk of completion) {
-            const content = chunk.choices[0]?.delta?.content || '';
+            const content =
+              chunk.choices[0]?.delta?.content || '';
             if (content) {
               fullAiResponse += content;
               controller.enqueue(encoder.encode(content));
             }
           }
-        } catch (err) { 
+        } catch (err) {
           console.error('Stream error:', err);
-          controller.error(err); 
+          controller.error(err);
         } finally {
           if (fullAiResponse) {
             await supabase.from('chat_messages').insert({
@@ -221,12 +255,14 @@ export async function POST(request: Request) {
     return new NextResponse(stream, {
       headers: {
         'Content-Type': 'text/plain; charset=utf-8',
-        'x-session-id': currentSessionId, 
+        'x-session-id': currentSessionId,
       },
     });
-
   } catch (error: any) {
     console.error('API Error:', error);
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    return NextResponse.json(
+      { error: error.message },
+      { status: 500 }
+    );
   }
 }

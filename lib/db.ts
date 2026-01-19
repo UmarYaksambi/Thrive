@@ -15,7 +15,11 @@ interface DownloadedResource {
 interface DownloadProgress {
   id: string;
   progress: number;
-  status: 'pending' | 'downloading' | 'completed' | 'failed';
+  status:
+    | 'pending'
+    | 'downloading'
+    | 'completed'
+    | 'failed';
   error?: string;
 }
 
@@ -31,16 +35,20 @@ interface LibraryDB extends DBSchema {
   };
 }
 
-let dbPromise: Promise<IDBPDatabase<LibraryDB>> | null = null;
+let dbPromise: Promise<IDBPDatabase<LibraryDB>> | null =
+  null;
 
 export function getDB() {
   if (!dbPromise) {
     dbPromise = openDB<LibraryDB>('library-offline', 1, {
       upgrade(db) {
         // Downloads store
-        const downloadStore = db.createObjectStore('downloads', {
-          keyPath: 'id',
-        });
+        const downloadStore = db.createObjectStore(
+          'downloads',
+          {
+            keyPath: 'id',
+          }
+        );
         downloadStore.createIndex('by-type', 'type');
 
         // Progress store
@@ -53,7 +61,9 @@ export function getDB() {
   return dbPromise;
 }
 
-export async function addDownload(resource: DownloadedResource) {
+export async function addDownload(
+  resource: DownloadedResource
+) {
   const db = await getDB();
   return db.put('downloads', resource);
 }
@@ -73,7 +83,10 @@ export async function deleteDownload(id: string) {
   return db.delete('downloads', id);
 }
 
-export async function updateProgress(id: string, progress: DownloadProgress) {
+export async function updateProgress(
+  id: string,
+  progress: DownloadProgress
+) {
   const db = await getDB();
   return db.put('downloadProgress', progress);
 }

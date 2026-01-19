@@ -1,297 +1,485 @@
-import { cookies } from 'next/headers';
-import Link from 'next/link';
-import { createServerClient } from '@supabase/ssr';
-import { redirect } from 'next/navigation';
+'use client';
+
+import { useState, useEffect } from 'react';
 import { Sidebar } from '@/components/sidebar';
 import { Topbar } from '@/components/topbar';
-import { CourseCard } from '@/components/course-card';
+import Link from 'next/link';
+// Ensure this path matches your DB definition
+import { Course } from '@/lib/server/courseStore'; 
+import { Chatbot } from '@/components/ui/chatbot'; 
+import { 
+  Play, Clock, MoreHorizontal, PieChart, Award, Download, 
+  TrendingUp, BarChart2, X, Activity, Calendar, Zap, Loader2, ImageIcon
+} from 'lucide-react';
 
-// We keep the mock data for now until your courses table is ready
-const mockCourses = [
-  {
-    id: '1',
-    title: 'Creative Writing for Beginners',
-    category: 'Marketing',
-    progress: 25,
-    totalLessons: 20,
-    completedLessons: 5,
-    colorCode: '#fccc42',
-    students: [
-      { name: 'John Doe', avatar: '' },
-      { name: 'Jane Smith', avatar: '' },
-      { name: 'Bob Johnson', avatar: '' },
-      { name: 'Extra 1', avatar: '' },
-      { name: 'Extra 2', avatar: '' },
-    ],
-  },
-  {
-    id: '2',
-    title: 'Digital Illustration with Adobe Illustrator',
-    category: 'Computer Science',
-    progress: 24,
-    totalLessons: 50,
-    completedLessons: 12,
-    colorCode: '#be94f5',
-    students: [
-      { name: 'Alice Brown', avatar: '' },
-      { name: 'Charlie White', avatar: '' },
-      { name: 'Diana Green', avatar: '' },
-      { name: 'Extra 1', avatar: '' },
-    ],
-  },
-  {
-    id: '3',
-    title: 'Public Speaking and Leadership',
-    category: 'Psychology',
-    progress: 82,
-    totalLessons: 22,
-    completedLessons: 18,
-    colorCode: '#a8d8ea',
-    students: [
-      { name: 'Emma Davis', avatar: '' },
-      { name: 'Frank Miller', avatar: '' },
-      { name: 'Grace Lee', avatar: '' },
-      { name: 'Extra 1', avatar: '' },
-    ],
-  },
-];
+export default function DashboardPage() {
+  // --- STATE MANAGEMENT ---
+  const [courses, setCourses] = useState<Course[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [filter, setFilter] = useState('All');
+  const [stats, setStats] = useState({ avgScore: 0, overallCompletion: 0 });
+  
+  // Track which images are currently being generated to show specific loaders
+  const [generatingImages, setGeneratingImages] = useState<Set<string>>(new Set());
 
-const nextLessons = [
-  {
-    id: '1',
-    title: '01. Introduction to Creative Writing',
-    subtitle: 'Creative writing for beginners',
-    teacher: 'ConnerGarcia',
-    avatar: '',
-    duration: '22 min',
-  },
-  {
-    id: '2',
-    title: '03. Foundations of Public Speaking',
-    subtitle: 'Public Speaking and Leadership',
-    teacher: 'Saira Goodman',
-    avatar: '',
-    duration: '40 min',
-  },
-  {
-    id: '3',
-    title: '05. Getting to know the tool Adobe Illustrator',
-    subtitle: 'Digital illustration with Adobe Illustrator',
-    teacher: 'Tony Ware',
-    avatar: '',
-    duration: '1h 08 min',
-  },
-  {
-    id: '4',
-    title: '11. Understanding audience psychology',
-    subtitle: 'Public Speaking: Basic course',
-    teacher: 'Mya Guzman',
-    avatar: '',
-    duration: '26 min',
-  },
-  {
-    id: '5',
-    title: '04. The importance of self reflection',
-    subtitle: 'Psychology of influence',
-    teacher: 'Zohaib Osborn',
-    avatar: '',
-    duration: '23 min',
-  },
-];
+  // Modal State
+  const [selectedCourse, setSelectedCourse] = useState<Course | null>(null);
 
-export default async function DashboardPage() {
-  const cookieStore = cookies();
+  // --- 1. FETCH DATA & INIT ---
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        // 1. Fetch Courses (Real + Dummy)
+        const courseRes = await fetch('/api/courses');
+        const courseData = await courseRes.json();
+        setCourses(courseData);
+        
+        // 2. Trigger Auto-Generation for missing images
+        checkAndGenerateImages(courseData);
 
-  // Initialize the Supabase Server Client
-  const supabase = createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-    {
-      cookies: {
-        getAll() {
-          return cookieStore.getAll();
-        },
-        setAll(cookiesToSet) {
-          // Cookie set logic (usually done in middleware for server components)
-        },
-      },
-    }
-  );
+        // 3. Fetch Calendar Results for Stats
+        const syncRes = await fetch('/api/calendar/sync');
+        const { results } = await syncRes.json();
 
-  // 1. Verify if the user is logged in
-  const { data: { user } } = await supabase.auth.getUser();
+        // 4. Calculate Stats
+        const totalProgress = courseData.reduce((acc: number, c: any) => acc + (c.progress || 0), 0);
+        const overallCompletion = courseData.length > 0 ? Math.round(totalProgress / courseData.length) : 0;
+        const totalScore = results.reduce((acc: number, r: any) => acc + r.score, 0);
+        const avgScore = results.length > 0 ? Math.round(totalScore / results.length) : 0;
 
-  // 2. Redirect to login if no session is found
-  if (!user) {
-    redirect('/login');
+        setStats({ avgScore, overallCompletion });
+      } catch (error) {
+        console.error('Failed to fetch dashboard data:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchData();
+  }, []);
+
+  // --- 2. IMAGE GENERATION LOGIC ---
+  const checkAndGenerateImages = async (coursesToCheck: Course[]) => {
+    coursesToCheck.forEach(async (course) => {
+      // Check if image is missing or is an external http link (we want local /course-images/)
+      const needsLocal = !course.imageUrl || course.imageUrl.startsWith('http');
+      
+      if (needsLocal) {
+        setGeneratingImages(prev => new Set(prev).add(course.id));
+
+        try {
+          const res = await fetch('/api/courses/image/generate', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ 
+              courseId: course.id, 
+              title: course.title, 
+              category: course.category 
+            })
+          });
+          
+          const data = await res.json();
+          
+          if (data.success && data.imageUrl) {
+            // Update state live
+            setCourses(prev => prev.map(c => 
+              c.id === course.id ? { ...c, imageUrl: data.imageUrl } : c
+            ));
+          }
+        } catch (error) {
+          console.error(`Failed to gen image for ${course.title}`);
+        } finally {
+          setGeneratingImages(prev => {
+            const next = new Set(prev);
+            next.delete(course.id);
+            return next;
+          });
+        }
+      }
+    });
+  };
+
+  // --- 3. REPORT DOWNLOAD ---
+  const downloadReport = async () => {
+    const res = await fetch('/api/reports/student');
+    const data = await res.json();
+    const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `Student_Report_${new Date().toISOString().split('T')[0]}.json`;
+    a.click();
+  };
+
+  // --- 4. VIEW HELPERS ---
+  const filteredCourses = filter === 'All' 
+    ? courses 
+    : courses.filter((c) => c.category === filter);
+
+  const nextLessons = courses
+    .map((course) => {
+      const activeModule = course.modules.find((m) =>
+        m.lessons.some((l) => !l.completed)
+      );
+      const activeLesson = activeModule?.lessons.find((l) => !l.completed);
+      if (!activeLesson) return null;
+      return {
+        id: activeLesson.id,
+        courseId: course.id,
+        title: activeLesson.title,
+        subtitle: course.title,
+        teacher: 'AI Tutor',
+        duration: activeLesson.duration,
+      };
+    })
+    .filter((item) => item !== null)
+    .slice(0, 5);
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-[#f7f7f5] flex items-center justify-center">
+        <div className="flex flex-col items-center gap-4">
+           <Loader2 className="w-10 h-10 animate-spin text-[#ff5734]" />
+           <div className="text-[#151313] font-bold">Loading Dashboard...</div>
+        </div>
+      </div>
+    );
   }
-
-  // 3. Fetch the real profile data from your public.profiles table
-  const { data: profile } = await supabase
-    .from('profiles')
-    .select('*')
-    .eq('id', user.id)
-    .single();
-
-  // 4. Fetch User Role for Sidebar
-  const { data: role } = await supabase.rpc('get_user_role');
-
-  // 5. Fetch Real Enrollments/Courses
-  const { data: enrollments } = await supabase
-    .from('enrollments')
-    .select(`
-      id,
-      progress_percent,
-      course:courses (
-        id,
-        title,
-        category,
-        thumbnail_url,
-        description
-      )
-    `)
-    .eq('user_id', user.id);
-
-  // Map to CourseCard format
-  const myCourses = (enrollments || []).map((enrollment: any) => ({
-    id: enrollment.course.id,
-    title: enrollment.course.title,
-    category: enrollment.course.category || 'General',
-    progress: enrollment.progress_percent || 0,
-    // We mock total/completed lessons for now as that requires deep counting
-    totalLessons: 20,
-    completedLessons: Math.round(((enrollment.progress_percent || 0) / 100) * 20),
-    colorCode: '#be94f5', // Default color, or derive from category
-    students: [], // Could fetch this if needed, but skipping for performance
-  }));
-
-  // Mock next lessons for now (or fetch from `lessons` table if linked)
-  // For MVP, we'll keep the static "next lessons" or empty state if no courses
-  const nextLessons = [
-    {
-      id: '1',
-      title: '01. Introduction',
-      subtitle: myCourses[0]?.title || 'Your Course',
-      teacher: 'Thrive Instructor',
-      avatar: '',
-      duration: '15 min',
-    }
-  ];
 
   return (
     <div className="min-h-screen bg-[#f7f7f5]">
-      <Sidebar userRole={role as any} />
+      <Sidebar />
       <div className="ml-20">
-        {/* 4. Pass the real user data to the Topbar */}
-        <Topbar
-          userName={profile?.full_name || 'Learner'}
-          userHandle={profile?.email?.split('@')[0] ? `@${profile.email.split('@')[0]}` : undefined}
-          userAvatar={profile?.avatar_url}
-        />
+        <Topbar userName="Learner" />
 
-        <main className="p-8">
+        {/* --- LEVITATING CHATBOT --- */}
+        <Chatbot />
+
+        <main className="p-8 relative">
+          
+          {/* --- METRICS HEADER --- */}
+          <div className="mb-8 grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div className="bg-[#151313] text-white p-6 rounded-3xl flex items-center justify-between shadow-lg">
+               <div>
+                  <p className="text-gray-400 text-sm font-semibold mb-1">Overall Progress</p>
+                  <h3 className="text-4xl font-bold">{stats.overallCompletion}%</h3>
+               </div>
+               <div className="w-12 h-12 bg-[#333] rounded-full flex items-center justify-center">
+                  <PieChart className="text-[#fccc42]" />
+               </div>
+            </div>
+
+            <div className="bg-white p-6 rounded-3xl flex items-center justify-between shadow-sm border border-gray-100">
+               <div>
+                  <p className="text-gray-500 text-sm font-semibold mb-1">Avg. Test Score</p>
+                  <h3 className={`text-4xl font-bold ${stats.avgScore >= 75 ? 'text-green-600' : 'text-[#151313]'}`}>
+                    {stats.avgScore}%
+                  </h3>
+               </div>
+               <div className="w-12 h-12 bg-gray-50 rounded-full flex items-center justify-center">
+                  <Award className="text-[#ff5734]" />
+               </div>
+            </div>
+
+            <button 
+              onClick={downloadReport}
+              className="bg-[#fccc42] hover:bg-[#f4b91a] transition-colors p-6 rounded-3xl flex flex-col justify-center items-start text-left shadow-sm group"
+            >
+               <div className="flex items-center gap-2 mb-2">
+                  <Download className="w-6 h-6 text-[#151313]" />
+                  <span className="font-bold text-[#151313]">Student Report</span>
+               </div>
+               <p className="text-sm text-[#151313]/80 group-hover:translate-x-1 transition-transform">
+                 Download full performance analytics PDF/JSON
+               </p>
+            </button>
+          </div>
+
+          {/* --- COURSE FILTERS --- */}
           <div className="mb-8">
             <div className="flex items-center justify-between mb-6">
               <h2 className="text-3xl font-bold text-[#151313]">My courses</h2>
               <div className="flex gap-2">
-                <button className="px-6 py-2 bg-[#151313] text-white rounded-full font-semibold text-sm hover:bg-[#2a2828] transition-colors">
-                  All courses
-                </button>
-                {/* Filters could be dynamic */}
+                {['All', 'Computer Science', 'Marketing', 'Business', 'Psychology'].map(
+                  (category) => (
+                    <button
+                      key={category}
+                      onClick={() => setFilter(category)}
+                      className={`px-6 py-2 rounded-full font-semibold text-sm transition-colors ${
+                        filter === category
+                          ? 'bg-[#151313] text-white'
+                          : 'bg-white border-2 border-gray-200 text-[#151313] hover:border-[#151313]'
+                      }`}
+                    >
+                      {category}
+                    </button>
+                  )
+                )}
               </div>
             </div>
 
-            {myCourses.length > 0 ? (
-              <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
-                {myCourses.map((course) => (
-                  <CourseCard key={course.id} {...course} />
-                ))}
+            {/* --- COURSE GRID --- */}
+            {filteredCourses.length === 0 ? (
+              <div className="bg-white rounded-3xl p-12 text-center border-2 border-dashed border-gray-300">
+                <p className="text-gray-500 mb-6">No courses found in this category.</p>
+                <Link href="/planner" className="px-8 py-3 bg-[#ff5734] text-white rounded-full font-bold">
+                  Generate Course
+                </Link>
               </div>
             ) : (
-              <div className="py-12 text-center bg-white rounded-3xl border-2 border-dashed border-gray-200">
-                <p className="text-gray-500 text-lg mb-4">You haven't enrolled in any courses yet.</p>
-                <Link href="/library" className="px-6 py-3 bg-[#fccc42] text-[#151313] font-bold rounded-full">Explore Library</Link>
+              <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+                {filteredCourses.map((course) => (
+                  <div key={course.id} className="relative group h-full">
+                    <Link href={`/course/${course.id}`} className="block h-full">
+                      <div className="bg-white rounded-3xl p-6 shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all cursor-pointer h-full flex flex-col">
+                        
+                        {/* Header & Actions */}
+                        <div className="flex justify-between items-start mb-4">
+                          <span className="px-3 py-1 bg-gray-100 rounded-full text-xs font-bold text-gray-600">
+                            {course.category}
+                          </span>
+                          
+                          <div className="flex items-center gap-2">
+                             {/* Stats Button (Stops Link Propagation) */}
+                             <button 
+                               onClick={(e) => {
+                                 e.preventDefault();
+                                 e.stopPropagation();
+                                 setSelectedCourse(course);
+                               }}
+                               className="p-2 hover:bg-gray-100 rounded-full text-gray-400 hover:text-[#ff5734] transition-colors relative z-20 group/stat"
+                             >
+                                <BarChart2 className="w-5 h-5" />
+                                <span className="absolute -top-8 right-0 bg-black text-white text-[10px] px-2 py-1 rounded opacity-0 group-hover/stat:opacity-100 transition-opacity whitespace-nowrap pointer-events-none">
+                                  Analytics
+                                </span>
+                             </button>
+                             
+                             <button className="p-2 hover:bg-gray-100 rounded-full text-gray-400 hover:text-gray-600">
+                                <MoreHorizontal className="w-5 h-5" />
+                             </button>
+                          </div>
+                        </div>
+
+                        {/* --- GEMINI AI IMAGE --- */}
+                        <div className="aspect-video rounded-2xl bg-gray-100 mb-4 overflow-hidden relative">
+                           {generatingImages.has(course.id) ? (
+                              <div className="w-full h-full flex flex-col items-center justify-center bg-gray-50 text-gray-400 gap-2">
+                                 <Loader2 className="w-8 h-8 animate-spin text-[#ff5734]" />
+                                 <span className="text-xs font-semibold">Designing Cover...</span>
+                              </div>
+                           ) : (
+                             <>
+                               <img 
+                                 src={course.imageUrl || '/placeholder.jpg'} 
+                                 alt={course.title} 
+                                 className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                                 loading="lazy"
+                                 onError={(e) => {
+                                    e.currentTarget.style.display = 'none';
+                                 }}
+                               />
+                               <div className="absolute inset-0 bg-black/10 group-hover:bg-transparent transition-colors" />
+                             </>
+                           )}
+                        </div>
+
+                        <h3 className="text-xl font-bold text-[#151313] mb-2 line-clamp-2">
+                          {course.title}
+                        </h3>
+
+                        {/* Progress */}
+                        <div className="mt-auto pt-4">
+                          <div className="flex justify-between text-sm text-gray-500 mb-2">
+                            <span className="flex items-center gap-1"><TrendingUp size={14}/> Progress</span>
+                            <span className="font-bold text-[#151313]">{course.progress}%</span>
+                          </div>
+                          <div className="w-full bg-gray-100 rounded-full h-2">
+                            <div
+                              className="h-full rounded-full transition-all duration-500"
+                              style={{
+                                width: `${course.progress}%`,
+                                backgroundColor: course.progress === 100 ? '#4ade80' : (course.colorCode || '#fccc42'),
+                              }}
+                            >
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </Link>
+                  </div>
+                ))}
               </div>
             )}
-
           </div>
 
+          {/* --- BOTTOM SECTION --- */}
           <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
             <div className="xl:col-span-2 bg-white rounded-3xl p-8 shadow-sm">
               <div className="flex items-center justify-between mb-6">
                 <h2 className="text-2xl font-bold text-[#151313]">My next lessons</h2>
-                <button className="text-[#fccc42] font-semibold text-sm hover:underline">
-                  View all lessons
-                </button>
+                <Link href="/calendar" className="text-[#fccc42] font-semibold text-sm hover:underline">
+                  View full schedule
+                </Link>
               </div>
 
               <div className="space-y-1">
                 <div className="grid grid-cols-12 gap-4 pb-3 border-b border-gray-200 text-sm font-semibold text-gray-500">
                   <div className="col-span-6">Lesson</div>
-                  <div className="col-span-4">Teacher</div>
+                  <div className="col-span-4">Course</div>
                   <div className="col-span-2 text-right">Duration</div>
                 </div>
 
-                {nextLessons.map((lesson) => (
-                  <div
-                    key={lesson.id}
-                    className="grid grid-cols-12 gap-4 py-4 hover:bg-gray-50 rounded-xl transition-colors cursor-pointer"
-                  >
-                    <div className="col-span-6">
-                      <div className="font-bold text-[#151313] mb-1">{lesson.title}</div>
-                      <div className="text-sm text-gray-500">{lesson.subtitle}</div>
-                    </div>
-                    <div className="col-span-4 flex items-center gap-3">
-                      <div className="w-10 h-10 rounded-full bg-gradient-to-br from-[#be94f5] to-[#ff5734] flex items-center justify-center text-white font-bold text-sm">
-                        {lesson.teacher.charAt(0)}
+                {nextLessons.length > 0 ? (
+                  nextLessons.map((lesson) => (
+                    <Link href={`/course/${lesson.courseId}`} key={lesson.id}>
+                      <div className="grid grid-cols-12 gap-4 py-4 hover:bg-gray-50 rounded-xl transition-colors cursor-pointer items-center group">
+                        <div className="col-span-6">
+                          <div className="font-bold text-[#151313] mb-1 group-hover:text-[#ff5734] transition-colors">
+                            {lesson.title}
+                          </div>
+                          <div className="text-sm text-gray-500">
+                            Video Lesson
+                          </div>
+                        </div>
+                        <div className="col-span-4 flex items-center gap-3">
+                          <div className="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center font-bold text-xs">
+                             {lesson.subtitle.charAt(0)}
+                          </div>
+                          <span className="font-medium text-[#151313] text-sm line-clamp-1">
+                            {lesson.subtitle}
+                          </span>
+                        </div>
+                        <div className="col-span-2 text-right font-semibold text-[#151313] flex items-center justify-end gap-2 text-sm">
+                           <Clock className="w-4 h-4 text-gray-400" />
+                          {lesson.duration}
+                        </div>
                       </div>
-                      <span className="font-medium text-[#151313]">{lesson.teacher}</span>
-                    </div>
-                    <div className="col-span-2 text-right font-semibold text-[#151313] flex items-center justify-end">
-                      {lesson.duration}
-                    </div>
+                    </Link>
+                  ))
+                ) : (
+                  <div className="py-8 text-center text-gray-500">
+                    <p>All caught up! No pending lessons.</p>
                   </div>
-                ))}
+                )}
               </div>
             </div>
 
-            <div className="bg-[#151313] rounded-3xl p-8 text-white shadow-sm">
-              <div className="mb-6">
-                <h3 className="text-sm font-semibold text-gray-400 mb-4">
-                  New course matching your interests
-                </h3>
-                <span className="px-4 py-1.5 bg-[#fccc42] text-[#151313] text-xs font-bold rounded-full inline-block">
-                  Computer Science
-                </span>
-              </div>
-
-              <h2 className="text-2xl font-bold mb-6 leading-tight">
-                Microsoft Future Ready: Fundamentals of Big Data
-              </h2>
-
-              <div className="mb-6">
-                <p className="text-sm text-gray-400 mb-3">They are already studying</p>
-                <div className="flex items-center">
-                  <div className="flex">
-                    {[1, 2, 3].map((i) => (
-                      <div
-                        key={i}
-                        className="w-10 h-10 rounded-full bg-gradient-to-br from-[#be94f5] to-[#ff5734] border-2 border-[#151313] -ml-2 first:ml-0"
-                      />
-                    ))}
-                  </div>
-                  <div className="w-10 h-10 rounded-full bg-[#fccc42] text-[#151313] font-bold text-sm flex items-center justify-center -ml-2">
-                    +100
-                  </div>
+            <div className="bg-[#151313] rounded-3xl p-8 text-white shadow-sm flex flex-col justify-between relative overflow-hidden">
+               <div className="absolute top-0 right-0 w-32 h-32 bg-[#ff5734] rounded-full blur-[60px] opacity-20"></div>
+              <div>
+                <div className="mb-6 relative z-10">
+                  <h3 className="text-sm font-semibold text-gray-400 mb-4">Recommendation</h3>
+                  <span className="px-4 py-1.5 bg-[#fccc42] text-[#151313] text-xs font-bold rounded-full inline-block">
+                    AI & Data
+                  </span>
                 </div>
+                <h2 className="text-2xl font-bold mb-6 leading-tight relative z-10">Want to advance your career?</h2>
+                <p className="text-gray-400 text-sm mb-6">Generate a custom path based on your recent quiz scores.</p>
               </div>
-
-              <button className="w-full py-4 bg-[#ff5734] text-white font-bold rounded-full hover:bg-[#e64d2d] transition-colors">
-                More details
-              </button>
+              <Link href="/planner">
+                 <button className="w-full py-4 bg-[#ff5734] text-white font-bold rounded-full hover:bg-[#e64d2d] transition-colors relative z-10 shadow-lg shadow-[#ff5734]/30">
+                   Create New Path
+                 </button>
+              </Link>
             </div>
           </div>
         </main>
+
+        {/* --- ANALYTICS MODAL OVERLAY --- */}
+        {selectedCourse && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 animate-in fade-in duration-200">
+             <div className="bg-white rounded-3xl w-full max-w-2xl overflow-hidden shadow-2xl scale-100 animate-in zoom-in-95 duration-200">
+                
+                {/* Modal Header */}
+                <div className="bg-[#151313] p-6 text-white flex items-center justify-between">
+                   <div className="flex items-center gap-4">
+                      <div className="w-12 h-12 rounded-xl bg-gray-800 overflow-hidden">
+                         <img src={selectedCourse.imageUrl} className="w-full h-full object-cover" />
+                      </div>
+                      <div>
+                         <h3 className="text-xl font-bold">{selectedCourse.title}</h3>
+                         <p className="text-gray-400 text-sm">Course Analytics</p>
+                      </div>
+                   </div>
+                   <button onClick={() => setSelectedCourse(null)} className="p-2 hover:bg-gray-800 rounded-full transition-colors">
+                      <X className="w-6 h-6" />
+                   </button>
+                </div>
+
+                {/* Modal Body */}
+                <div className="p-8">
+                   <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
+                      <div className="bg-gray-50 p-4 rounded-2xl border border-gray-100">
+                         <div className="flex items-center gap-2 text-gray-500 text-sm font-bold mb-2">
+                            <Activity className="w-4 h-4 text-[#ff5734]" /> Time Spent
+                         </div>
+                         <h4 className="text-2xl font-bold text-[#151313]">
+                           {/* Simple estimate logic */}
+                           {Math.round(selectedCourse.completedLessons * 0.5)}h 15m
+                         </h4>
+                      </div>
+                      <div className="bg-gray-50 p-4 rounded-2xl border border-gray-100">
+                         <div className="flex items-center gap-2 text-gray-500 text-sm font-bold mb-2">
+                            <Zap className="w-4 h-4 text-[#fccc42]" /> Current Streak
+                         </div>
+                         <h4 className="text-2xl font-bold text-[#151313]">3 Days</h4>
+                      </div>
+                      <div className="bg-gray-50 p-4 rounded-2xl border border-gray-100">
+                         <div className="flex items-center gap-2 text-gray-500 text-sm font-bold mb-2">
+                            <Calendar className="w-4 h-4 text-[#be94f5]" /> Est. Finish
+                         </div>
+                         <h4 className="text-2xl font-bold text-[#151313]">Jan 28</h4>
+                      </div>
+                   </div>
+
+                   <div className="mb-6">
+                      <div className="flex justify-between items-end mb-2">
+                         <h4 className="font-bold text-gray-800">Learning Mastery</h4>
+                         <span className="text-[#ff5734] font-bold text-sm">Needs Focus</span>
+                      </div>
+                      <div className="space-y-3">
+                         <div className="flex items-center gap-4">
+                            <span className="text-xs font-bold text-gray-500 w-20">Concept</span>
+                            <div className="flex-1 h-2 bg-gray-100 rounded-full">
+                               <div className="h-full bg-[#4ade80] rounded-full w-[85%]"></div>
+                            </div>
+                            <span className="text-xs font-bold">85%</span>
+                         </div>
+                         <div className="flex items-center gap-4">
+                            <span className="text-xs font-bold text-gray-500 w-20">Application</span>
+                            <div className="flex-1 h-2 bg-gray-100 rounded-full">
+                               <div className="h-full bg-[#fccc42] rounded-full w-[60%]"></div>
+                            </div>
+                            <span className="text-xs font-bold">60%</span>
+                         </div>
+                         <div className="flex items-center gap-4">
+                            <span className="text-xs font-bold text-gray-500 w-20">Quizzes</span>
+                            <div className="flex-1 h-2 bg-gray-100 rounded-full">
+                               <div className="h-full bg-[#ff5734] rounded-full w-[40%]"></div>
+                            </div>
+                            <span className="text-xs font-bold">40%</span>
+                         </div>
+                      </div>
+                   </div>
+
+                   <div className="flex justify-end gap-3">
+                      <button 
+                        onClick={() => setSelectedCourse(null)}
+                        className="px-6 py-3 font-bold text-gray-500 hover:text-black transition-colors"
+                      >
+                         Close
+                      </button>
+                      <Link href={`/course/${selectedCourse.id}`}>
+                        <button className="px-6 py-3 bg-[#151313] text-white font-bold rounded-xl hover:bg-gray-800 transition-colors">
+                           Resume Course
+                        </button>
+                      </Link>
+                   </div>
+                </div>
+             </div>
+          </div>
+        )}
+
       </div>
     </div>
   );
