@@ -1,114 +1,122 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Sidebar } from '@/components/sidebar';
 import { Topbar } from '@/components/topbar';
-import {
-  ChevronLeft,
-  ChevronRight,
-  Clock,
-} from 'lucide-react';
+import { ChevronLeft, ChevronRight, Clock, BookOpen, AlertCircle, Calendar as CalendarIcon } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import Link from 'next/link';
 
-const daysInMonth = (date: Date) =>
-  new Date(
-    date.getFullYear(),
-    date.getMonth() + 1,
-    0
-  ).getDate();
-const firstDayOfMonth = (date: Date) =>
-  new Date(date.getFullYear(), date.getMonth(), 1).getDay();
-
-const scheduledLessons = [
-  {
-    date: 5,
-    title: 'React Fundamentals',
-    time: '10:00 AM',
-    duration: '1h',
-  },
-  {
-    date: 7,
-    title: 'State Management',
-    time: '2:00 PM',
-    duration: '1.5h',
-  },
-  {
-    date: 12,
-    title: 'Hooks Deep Dive',
-    time: '11:00 AM',
-    duration: '45m',
-  },
-  {
-    date: 14,
-    title: 'Performance Optimization',
-    time: '3:00 PM',
-    duration: '1h',
-  },
-  {
-    date: 19,
-    title: 'Testing in React',
-    time: '10:00 AM',
-    duration: '2h',
-  },
-  {
-    date: 22,
-    title: 'Advanced Patterns',
-    time: '1:00 PM',
-    duration: '1.5h',
-  },
-];
+// Type definitions (ensure these match your types/course.ts)
+type CalendarEvent = {
+  id: string;
+  courseId: string;
+  title: string;
+  date: Date; // Actual Date object
+  type: 'Lesson' | 'Quiz' | 'Final Exam';
+  duration: string;
+  completed: boolean;
+};
 
 export default function CalendarPage() {
-  const [currentDate, setCurrentDate] = useState(
-    new Date(2025, 10)
-  ); // November 2025
-  const [selectedDate, setSelectedDate] = useState<
-    number | null
-  >(null);
+  const [currentDate, setCurrentDate] = useState(new Date());
+  const [selectedDate, setSelectedDate] = useState<Date>(new Date());
+  const [events, setEvents] = useState<CalendarEvent[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  const monthName = currentDate.toLocaleString('default', {
-    month: 'long',
-    year: 'numeric',
-  });
+  // 1. Fetch Courses and Flatten into Events
+  useEffect(() => {
+    const fetchAndMapCourses = async () => {
+      try {
+        const res = await fetch('/api/courses');
+        const courses = await res.json();
+
+        const mappedEvents: CalendarEvent[] = [];
+
+        courses.forEach((course: any) => {
+          const startDate = new Date(course.startDate); // Ensure your API saves this ISO string
+          
+          // Logic: Distribute modules every 2 days
+          course.modules.forEach((module: any, modIndex: number) => {
+            // Calculate Lesson Date
+            const lessonDate = new Date(startDate);
+            lessonDate.setDate(startDate.getDate() + (modIndex * 2)); 
+
+            // Add Lessons
+            module.lessons.forEach((lesson: any, lessonIndex: number) => {
+               // If multiple lessons in a module, maybe stack them on the same day or spread slightly
+               mappedEvents.push({
+                 id: lesson.id,
+                 courseId: course.id,
+                 title: `${course.title}: ${lesson.title}`,
+                 date: new Date(lessonDate), 
+                 type: 'Lesson',
+                 duration: lesson.duration || '30m',
+                 completed: lesson.completed
+               });
+            });
+
+            // Add Module Quiz (if exists) - Schedule for the day after the module
+            if (module.quiz) {
+               const quizDate = new Date(lessonDate);
+               quizDate.setDate(lessonDate.getDate() + 1);
+               mappedEvents.push({
+                  id: module.quiz.id || `${module.id}-quiz`,
+                  courseId: course.id,
+                  title: `Quiz: ${module.title}`,
+                  date: quizDate,
+                  type: 'Quiz',
+                  duration: '20m',
+                  completed: module.quiz.completed
+               });
+            }
+          });
+        });
+
+        setEvents(mappedEvents);
+      } catch (error) {
+        console.error("Failed to load calendar events", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchAndMapCourses();
+  }, []);
+
+  // Calendar Utility Functions
+  const daysInMonth = (date: Date) => new Date(date.getFullYear(), date.getMonth() + 1, 0).getDate();
+  const firstDayOfMonth = (date: Date) => new Date(date.getFullYear(), date.getMonth(), 1).getDay();
+  
+  const monthName = currentDate.toLocaleString('default', { month: 'long', year: 'numeric' });
+  
+  // Grid Generation
   const days = [];
   const totalDays = daysInMonth(currentDate);
   const startDay = firstDayOfMonth(currentDate);
 
-  for (let i = 0; i < startDay; i++) {
-    days.push(null);
-  }
+  for (let i = 0; i < startDay; i++) days.push(null);
+  for (let i = 1; i <= totalDays; i++) days.push(i);
 
-  for (let i = 1; i <= totalDays; i++) {
-    days.push(i);
-  }
-
-  const previousMonth = () => {
-    setCurrentDate(
-      new Date(
-        currentDate.getFullYear(),
-        currentDate.getMonth() - 1
-      )
+  // Filter Events
+  const getEventsForDate = (day: number) => {
+    return events.filter(e => 
+      e.date.getDate() === day && 
+      e.date.getMonth() === currentDate.getMonth() &&
+      e.date.getFullYear() === currentDate.getFullYear()
     );
   };
 
-  const nextMonth = () => {
-    setCurrentDate(
-      new Date(
-        currentDate.getFullYear(),
-        currentDate.getMonth() + 1
-      )
-    );
-  };
+  const selectedDayEvents = events.filter(e => 
+     e.date.getDate() === selectedDate.getDate() &&
+     e.date.getMonth() === selectedDate.getMonth() &&
+     e.date.getFullYear() === selectedDate.getFullYear()
+  );
 
-  const getLessonsForDate = (date: number) => {
-    return scheduledLessons.filter(
-      (lesson) => lesson.date === date
-    );
-  };
-
-  const selectedLessons = selectedDate
-    ? getLessonsForDate(selectedDate)
-    : [];
+  const upcomingEvents = events
+    .filter(e => e.date >= new Date())
+    .sort((a,b) => a.date.getTime() - b.date.getTime())
+    .slice(0, 5);
 
   return (
     <div className="min-h-screen bg-[#f7f7f5]">
@@ -118,191 +126,121 @@ export default function CalendarPage() {
 
         <main className="p-8">
           <div className="max-w-6xl mx-auto">
-            <h2 className="text-4xl font-bold text-[#151313] mb-8">
-              Learning Calendar
-            </h2>
+            <h2 className="text-4xl font-bold text-[#151313] mb-8">Learning Calendar</h2>
 
+            {loading ? (
+               <div className="w-full h-96 flex items-center justify-center">
+                  <div className="text-gray-500">Loading schedule...</div>
+               </div>
+            ) : (
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-              {/* Calendar */}
-              <div className="lg:col-span-2 bg-white rounded-3xl p-8 shadow-sm">
+              
+              {/* Left Column: Calendar Grid */}
+              <div className="lg:col-span-2 bg-white rounded-3xl p-8 shadow-sm h-fit">
                 <div className="flex items-center justify-between mb-8">
-                  <h3 className="text-2xl font-bold text-[#151313]">
-                    {monthName}
-                  </h3>
+                  <h3 className="text-2xl font-bold text-[#151313]">{monthName}</h3>
                   <div className="flex gap-2">
-                    <button
-                      onClick={previousMonth}
-                      className="w-10 h-10 rounded-full bg-gray-100 flex items-center justify-center hover:bg-[#fccc42] transition-colors"
-                    >
+                    <button onClick={() => setCurrentDate(new Date(currentDate.getFullYear(), currentDate.getMonth() - 1))} className="w-10 h-10 rounded-full bg-gray-100 flex items-center justify-center hover:bg-[#fccc42]">
                       <ChevronLeft className="w-5 h-5" />
                     </button>
-                    <button
-                      onClick={nextMonth}
-                      className="w-10 h-10 rounded-full bg-gray-100 flex items-center justify-center hover:bg-[#fccc42] transition-colors"
-                    >
+                    <button onClick={() => setCurrentDate(new Date(currentDate.getFullYear(), currentDate.getMonth() + 1))} className="w-10 h-10 rounded-full bg-gray-100 flex items-center justify-center hover:bg-[#fccc42]">
                       <ChevronRight className="w-5 h-5" />
                     </button>
                   </div>
                 </div>
 
-                {/* Day labels */}
                 <div className="grid grid-cols-7 gap-2 mb-4">
-                  {[
-                    'Sun',
-                    'Mon',
-                    'Tue',
-                    'Wed',
-                    'Thu',
-                    'Fri',
-                    'Sat',
-                  ].map((day) => (
-                    <div
-                      key={day}
-                      className="text-center font-bold text-[#151313] text-sm py-2"
-                    >
-                      {day}
-                    </div>
+                  {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(day => (
+                    <div key={day} className="text-center font-bold text-gray-400 text-sm py-2">{day}</div>
                   ))}
                 </div>
 
-                {/* Calendar days */}
                 <div className="grid grid-cols-7 gap-2">
                   {days.map((day, idx) => {
-                    const hasLessons =
-                      day &&
-                      getLessonsForDate(day).length > 0;
-                    const isSelected = selectedDate === day;
+                    const dayEvents = day ? getEventsForDate(day) : [];
+                    const hasLesson = dayEvents.some(e => e.type === 'Lesson');
+                    const hasQuiz = dayEvents.some(e => e.type === 'Quiz');
+                    const isSelected = day === selectedDate.getDate() && currentDate.getMonth() === selectedDate.getMonth();
 
                     return (
                       <button
                         key={idx}
-                        onClick={() =>
-                          day && setSelectedDate(day)
-                        }
+                        disabled={!day}
+                        onClick={() => day && setSelectedDate(new Date(currentDate.getFullYear(), currentDate.getMonth(), day))}
                         className={cn(
-                          'aspect-square rounded-xl font-bold transition-all flex items-center justify-center relative',
-                          !day
-                            ? 'cursor-default'
-                            : isSelected
-                              ? 'bg-[#fccc42] text-[#151313] scale-110'
-                              : hasLessons
-                                ? 'bg-[#be94f5] text-white hover:scale-105'
-                                : 'bg-gray-100 text-[#151313] hover:bg-gray-200'
+                          'aspect-square rounded-xl font-bold transition-all flex flex-col items-center justify-center relative',
+                          !day ? 'invisible' : '',
+                          isSelected ? 'bg-[#151313] text-white scale-105 shadow-lg' : 'bg-gray-50 text-gray-700 hover:bg-gray-200'
                         )}
                       >
                         {day}
-                        {hasLessons && (
-                          <div className="absolute bottom-1 w-1 h-1 bg-current rounded-full"></div>
-                        )}
+                        <div className="flex gap-1 mt-1">
+                           {hasLesson && <div className={`w-1.5 h-1.5 rounded-full ${isSelected ? 'bg-[#fccc42]' : 'bg-[#be94f5]'}`} />}
+                           {hasQuiz && <div className={`w-1.5 h-1.5 rounded-full ${isSelected ? 'bg-[#ff5734]' : 'bg-[#ff5734]'}`} />}
+                        </div>
                       </button>
                     );
                   })}
                 </div>
-
-                <div className="mt-8 pt-8 border-t-2 border-gray-200">
-                  <h4 className="text-lg font-bold text-[#151313] mb-4">
-                    Legend
-                  </h4>
-                  <div className="flex gap-6">
-                    <div className="flex items-center gap-2">
-                      <div className="w-6 h-6 rounded-lg bg-[#be94f5]"></div>
-                      <span className="text-sm font-semibold text-gray-600">
-                        Has lessons scheduled
-                      </span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <div className="w-6 h-6 rounded-lg bg-[#fccc42]"></div>
-                      <span className="text-sm font-semibold text-gray-600">
-                        Selected date
-                      </span>
-                    </div>
-                  </div>
+                
+                <div className="mt-6 flex gap-4 text-sm font-semibold text-gray-500">
+                   <div className="flex items-center gap-2"><div className="w-3 h-3 rounded-full bg-[#be94f5]"/> Lesson</div>
+                   <div className="flex items-center gap-2"><div className="w-3 h-3 rounded-full bg-[#ff5734]"/> Mandatory Quiz</div>
                 </div>
               </div>
 
-              {/* Lessons for selected date */}
-              <div className="bg-white rounded-3xl p-8 shadow-sm h-fit">
-                <h3 className="text-2xl font-bold text-[#151313] mb-6">
-                  {selectedDate
-                    ? `Lessons on Nov ${selectedDate}`
-                    : 'Select a date'}
-                </h3>
+              {/* Right Column: Day Detail & Upcoming */}
+              <div className="space-y-6">
+                 {/* Selected Date View */}
+                 <div className="bg-white rounded-3xl p-6 shadow-sm min-h-[200px]">
+                    <h3 className="text-xl font-bold text-[#151313] mb-4">
+                       {selectedDate.toLocaleDateString('default', { month: 'short', day: 'numeric' })}
+                    </h3>
+                    
+                    {selectedDayEvents.length > 0 ? (
+                       <div className="space-y-3">
+                          {selectedDayEvents.map((ev) => (
+                             <div key={ev.id} className="border-l-4 border-[#fccc42] pl-4 py-1">
+                                <p className="font-bold text-sm text-gray-800 line-clamp-1">{ev.title}</p>
+                                <div className="flex items-center gap-2 text-xs text-gray-500 mt-1">
+                                   <span className={`px-2 py-0.5 rounded text-white ${ev.type === 'Quiz' ? 'bg-[#ff5734]' : 'bg-[#be94f5]'}`}>{ev.type}</span>
+                                   <Clock size={12} /> {ev.duration}
+                                </div>
+                                <Link href={`/course/${ev.courseId}`} className="text-xs font-bold text-[#151313] hover:underline mt-2 block">
+                                   Go to Course -
+                                </Link>
+                             </div>
+                          ))}
+                       </div>
+                    ) : (
+                       <div className="text-center py-8 text-gray-400">
+                          <p>No tasks scheduled.</p>
+                       </div>
+                    )}
+                 </div>
 
-                {selectedDate &&
-                selectedLessons.length > 0 ? (
-                  <div className="space-y-4">
-                    {selectedLessons.map((lesson, idx) => (
-                      <div
-                        key={idx}
-                        className="border-2 border-gray-200 rounded-2xl p-4"
-                      >
-                        <h4 className="font-bold text-[#151313] mb-3">
-                          {lesson.title}
-                        </h4>
-                        <div className="space-y-2 text-sm">
-                          <div className="flex items-center gap-2 text-gray-600">
-                            <Clock className="w-4 h-4" />
-                            <span>{lesson.time}</span>
+                 {/* Upcoming List */}
+                 <div className="bg-[#151313] rounded-3xl p-6 shadow-sm text-white">
+                    <h3 className="text-xl font-bold mb-4">Upcoming Deadlines</h3>
+                    <div className="space-y-4">
+                       {upcomingEvents.map((ev, i) => (
+                          <div key={i} className="flex items-center gap-4">
+                             <div className="bg-[#333] w-12 h-12 rounded-xl flex flex-col items-center justify-center text-xs font-bold">
+                                <span className="text-[#fccc42]">{ev.date.getDate()}</span>
+                                <span className="uppercase text-gray-400">{ev.date.toLocaleString('default',{month:'short'})}</span>
+                             </div>
+                             <div>
+                                <p className="font-bold text-sm line-clamp-1">{ev.title}</p>
+                                <p className="text-xs text-gray-400">{ev.duration} • {ev.type}</p>
+                             </div>
                           </div>
-                          <div className="text-gray-600">
-                            Duration: {lesson.duration}
-                          </div>
-                        </div>
-                        <button className="w-full mt-4 px-4 py-2 bg-[#fccc42] text-[#151313] font-bold rounded-full hover:bg-[#f4b91a] transition-colors text-sm">
-                          Open Lesson
-                        </button>
-                      </div>
-                    ))}
-                  </div>
-                ) : selectedDate &&
-                  selectedLessons.length === 0 ? (
-                  <div className="text-center py-8 text-gray-500">
-                    <p className="font-semibold mb-2">
-                      No lessons scheduled
-                    </p>
-                    <button className="text-[#fccc42] font-bold hover:underline">
-                      Schedule a lesson
-                    </button>
-                  </div>
-                ) : (
-                  <div className="text-center py-8 text-gray-500">
-                    <p className="font-semibold">
-                      Select a date to view lessons
-                    </p>
-                  </div>
-                )}
-              </div>
-            </div>
-
-            {/* Upcoming lessons */}
-            <div className="mt-8 bg-white rounded-3xl p-8 shadow-sm">
-              <h3 className="text-2xl font-bold text-[#151313] mb-6">
-                Upcoming Lessons
-              </h3>
-              <div className="space-y-3">
-                {scheduledLessons
-                  .slice(0, 5)
-                  .map((lesson, idx) => (
-                    <div
-                      key={idx}
-                      className="flex items-center justify-between p-4 bg-gray-50 rounded-2xl hover:bg-gray-100 transition-colors"
-                    >
-                      <div>
-                        <div className="font-bold text-[#151313]">
-                          {lesson.title}
-                        </div>
-                        <div className="text-sm text-gray-600">
-                          Nov {lesson.date} • {lesson.time}
-                        </div>
-                      </div>
-                      <div className="flex items-center gap-2 text-[#fccc42] font-bold">
-                        <Clock className="w-4 h-4" />
-                        {lesson.duration}
-                      </div>
+                       ))}
                     </div>
-                  ))}
+                 </div>
               </div>
+
             </div>
+            )}
           </div>
         </main>
       </div>
