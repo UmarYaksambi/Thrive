@@ -5,6 +5,40 @@ import { v4 as uuidv4 } from 'uuid';
 // This mimics a database by storing JSON files in a "data" folder in your project root
 const DB_PATH = path.join(process.cwd(), 'data', 'courses.json');
 const RESULTS_PATH = path.join(process.cwd(), 'data', 'results.json');
+const CALENDAR_NOTES_PATH = path.join(process.cwd(), 'data', 'calendar-notes.json');
+
+const ensureDataDir = async () => {
+  await fs.ensureDir(path.join(process.cwd(), 'data'));
+};
+
+// --- TYPES ---
+export type CalendarNote = {
+  date: string; // YYYY-MM-DD
+  note: string;
+};
+
+// --- DATA ACCESSORS ---
+
+// Get All Courses
+
+// Get Calendar Notes
+export const getCalendarNotes = async () => {
+  await ensureDataDir();
+  if (!fs.existsSync(CALENDAR_NOTES_PATH)) return [];
+  return fs.readJson(CALENDAR_NOTES_PATH);
+};
+
+// Save Calendar Note
+export const saveCalendarNote = async (noteEntry: CalendarNote) => {
+  await ensureDataDir();
+  let notes = await getCalendarNotes();
+  // Filter out existing note for the date to update it
+  notes = notes.filter((n: CalendarNote) => n.date !== noteEntry.date);
+  if (noteEntry.note.trim() !== '') {
+    notes.push(noteEntry);
+  }
+  await fs.writeJson(CALENDAR_NOTES_PATH, notes, { spaces: 2 });
+};
 
 export type QuizResult = {
   id: string;
