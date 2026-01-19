@@ -42,14 +42,9 @@ export default function LandingPage() {
 
   return (
     <div className="min-h-screen from-[#f7f7f5] via-[#fef9f3] to-[#f5f3fe] bg-[linear-gradient(90deg,#e5d6ff40_1px,transparent_1px),linear-gradient(#e5d6ff40_1px,transparent_1px)] bg-[size:34px_34px] overflow-hidden">
-<<<<<<< HEAD
-      <style dangerouslySetInnerHTML={{
-        __html: `
-=======
       <style
         dangerouslySetInnerHTML={{
           __html: `
->>>>>>> origin/main
         @keyframes rocketFly {
           0% {
             transform: translate(0, 400px) rotate(0deg) scale(0.5);
@@ -429,7 +424,7 @@ export default function LandingPage() {
         </h1>
         <div className="flex items-center gap-4">
           <Link
-            href="/login"
+            href="/dashboard"
             className="px-6 py-2.5 text-[#151313] font-semibold hover:text-[#C2AAFB] transition-colors"
           >
             Sign In
@@ -452,17 +447,6 @@ export default function LandingPage() {
 
             {/* Rocket with spiral trail */}
             <div className="rocket-container">
-<<<<<<< HEAD
-              <svg className="rocket" width="60" height="60" viewBox="0 0 60 60" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <path d="M30 5L35 20L30 15L25 20L30 5Z" fill="#FF5734" />
-                <ellipse cx="30" cy="25" rx="8" ry="12" fill="#D8C4FB" />
-                <circle cx="30" cy="22" r="3" fill="#151313" />
-                <path d="M22 30L18 40L22 35L22 30Z" fill="#C2AAFB" />
-                <path d="M38 30L42 40L38 35L38 30Z" fill="#C2AAFB" />
-                <rect x="27" y="35" width="6" height="8" rx="1" fill="#151313" />
-              </svg>
-              <svg className="trail" width="200" height="400" viewBox="0 0 200 400">
-=======
               <svg
                 className="rocket"
                 width="60"
@@ -511,7 +495,6 @@ export default function LandingPage() {
                 height="400"
                 viewBox="0 0 200 400"
               >
->>>>>>> origin/main
                 <path
                   d="M100,350 Q80,300 100,250 T100,150 T100,50"
                   stroke="#D8C4FB"
@@ -561,23 +544,6 @@ export default function LandingPage() {
 
             {/* Floating book icon */}
             <div className="float-item book-1">
-<<<<<<< HEAD
-              <div className="text-5xl float-gentle">📖</div>
-            </div>
-
-
-            {/* Brain icon */}
-            <div className="relative">
-              <div className="absolute right-[15%] top-[70%] float-item-alt brain-icon">
-                <div className="text-5xl float-gentle-delayed">🧠</div>
-              </div>
-            </div>
-
-
-            {/* Lightbulb with glow */}
-            <div className="float-item lightbulb">
-              <div className="text-6xl float-gentle" style={{ filter: 'drop-shadow(0 0 20px rgba(255, 215, 0, 0.6))' }}>💡</div>
-=======
               <div className="text-5xl float-gentle">
                 📖
               </div>
@@ -603,7 +569,6 @@ export default function LandingPage() {
               >
                 💡
               </div>
->>>>>>> origin/main
             </div>
 
             {/* Certificate with bounce */}
@@ -746,20 +711,16 @@ export default function LandingPage() {
 
       <footer className="border-t border-gray-200 mt-20 py-8">
         <div className="max-w-7xl mx-auto px-6 text-center text-gray-600">
-<<<<<<< HEAD
-          <p>&copy; 2025 Thrive. Empowering learners worldwide.</p>
+          <p>
+            &copy; 2025 Thrive. Empowering learners
+            worldwide.
+          </p>
           <Link
             href="/admin/signup"
             className="mt-4 inline-block text-sm text-gray-400 hover:text-[#D8C4FB] transition-colors"
           >
             Admin Access →
           </Link>
-=======
-          <p>
-            &copy; 2025 Thrive. Empowering learners
-            worldwide.
-          </p>
->>>>>>> origin/main
         </div>
       </footer>
     </div>

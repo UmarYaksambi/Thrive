@@ -1,11 +1,11 @@
 'use server'
 
 import { createServerClient, type CookieOptions } from '@supabase/ssr'
-import { cookies, type UnsafeUnwrappedCookies } from 'next/headers';
+import { cookies } from 'next/headers';
 import { redirect } from 'next/navigation'
 
-function getSupabase() {
-  const cookieStore = (cookies() as unknown as UnsafeUnwrappedCookies)
+async function getSupabase() {
+  const cookieStore = await cookies()
   return createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
@@ -13,10 +13,14 @@ function getSupabase() {
       cookies: {
         get(name: string) { return cookieStore.get(name)?.value },
         set(name: string, value: string, options: CookieOptions) {
-          cookieStore.set({ name, value, ...options })
+          try {
+            cookieStore.set({ name, value, ...options })
+          } catch { }
         },
         remove(name: string, options: CookieOptions) {
-          cookieStore.set({ name, value: '', ...options })
+          try {
+            cookieStore.set({ name, value: '', ...options })
+          } catch { }
         },
       },
     }
@@ -24,7 +28,7 @@ function getSupabase() {
 }
 
 export async function adminLogin(formData: FormData) {
-  const supabase = getSupabase()
+  const supabase = await getSupabase()
   const email = formData.get('email') as string
   const password = formData.get('password') as string
 

@@ -4,7 +4,7 @@ import {
   createServerClient,
   type CookieOptions,
 } from '@supabase/ssr';
-import { cookies, type UnsafeUnwrappedCookies } from 'next/headers';
+import { cookies } from 'next/headers';
 import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
 
@@ -16,8 +16,8 @@ const ALLOWED_TYPES = [
 ];
 const MAX_FILE_SIZE = 2 * 1024 * 1024; // 2MB
 
-function getSupabase() {
-  const cookieStore = (cookies() as unknown as UnsafeUnwrappedCookies);
+async function getSupabase() {
+  const cookieStore = await cookies();
   return createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
@@ -31,10 +31,14 @@ function getSupabase() {
           value: string,
           options: CookieOptions
         ) {
-          cookieStore.set({ name, value, ...options });
+          try {
+            cookieStore.set({ name, value, ...options });
+          } catch { }
         },
         remove(name: string, options: CookieOptions) {
-          cookieStore.set({ name, value: '', ...options });
+          try {
+            cookieStore.set({ name, value: '', ...options });
+          } catch { }
         },
       },
     }
@@ -81,7 +85,7 @@ async function deleteUserStorageFiles(
 }
 
 export async function uploadAvatar(formData: FormData) {
-  const supabase = getSupabase();
+  const supabase = await getSupabase();
   const file = formData.get('file') as File;
   const {
     data: { user },
@@ -125,7 +129,7 @@ export async function uploadAvatar(formData: FormData) {
 }
 
 export async function removeAvatar() {
-  const supabase = getSupabase();
+  const supabase = await getSupabase();
   const {
     data: { user },
   } = await supabase.auth.getUser();
@@ -147,7 +151,7 @@ export async function removeAvatar() {
 }
 
 export async function deleteAccountAction() {
-  const supabase = getSupabase();
+  const supabase = await getSupabase();
   const {
     data: { user },
   } = await supabase.auth.getUser();
@@ -166,7 +170,7 @@ export async function deleteAccountAction() {
 }
 
 export async function updateProfile(formData: FormData) {
-  const supabase = getSupabase();
+  const supabase = await getSupabase();
   const {
     data: { user },
   } = await supabase.auth.getUser();

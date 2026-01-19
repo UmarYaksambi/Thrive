@@ -98,13 +98,7 @@ const withPWA = require('next-pwa')({
 });
 
 const nextConfig = {
-  eslint: {
-    ignoreDuringBuilds: true,
-  },
   images: { unoptimized: true },
-  experimental: {
-    serverActions: true,
-  },
 };
 
 module.exports = withPWA(nextConfig);
