@@ -4,13 +4,17 @@ import { useState, useEffect } from 'react';
 import { Sidebar } from '@/components/sidebar';
 import { Topbar } from '@/components/topbar';
 import Link from 'next/link';
-// Ensure this path matches your DB definition
+// Importing from our local JSON DB logic
 import { Course } from '@/lib/server/courseStore'; 
 import { Chatbot } from '@/components/ui/chatbot'; 
 import { 
   Play, Clock, MoreHorizontal, PieChart, Award, Download, 
   TrendingUp, BarChart2, X, Activity, Calendar, Zap, Loader2, ImageIcon
 } from 'lucide-react';
+
+// PDF Imports
+import jsPDF from 'jspdf';
+import autoTable from 'jspdf-autotable';
 
 export default function DashboardPage() {
   // --- STATE MANAGEMENT ---
@@ -19,7 +23,7 @@ export default function DashboardPage() {
   const [filter, setFilter] = useState('All');
   const [stats, setStats] = useState({ avgScore: 0, overallCompletion: 0 });
   
-  // Track which images are currently being generated to show specific loaders
+  // Track which images are currently being generated
   const [generatingImages, setGeneratingImages] = useState<Set<string>>(new Set());
 
   // Modal State
@@ -29,19 +33,19 @@ export default function DashboardPage() {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        // 1. Fetch Courses (Real + Dummy)
+        // Fetch Courses
         const courseRes = await fetch('/api/courses');
         const courseData = await courseRes.json();
         setCourses(courseData);
         
-        // 2. Trigger Auto-Generation for missing images
+        // Trigger Auto-Generation for missing images
         checkAndGenerateImages(courseData);
 
-        // 3. Fetch Calendar Results for Stats
+        // Fetch Stats
         const syncRes = await fetch('/api/calendar/sync');
         const { results } = await syncRes.json();
 
-        // 4. Calculate Stats
+        // Calculate Stats
         const totalProgress = courseData.reduce((acc: number, c: any) => acc + (c.progress || 0), 0);
         const overallCompletion = courseData.length > 0 ? Math.round(totalProgress / courseData.length) : 0;
         const totalScore = results.reduce((acc: number, r: any) => acc + r.score, 0);
@@ -60,10 +64,13 @@ export default function DashboardPage() {
   // --- 2. IMAGE GENERATION LOGIC ---
   const checkAndGenerateImages = async (coursesToCheck: Course[]) => {
     coursesToCheck.forEach(async (course) => {
-      // Check if image is missing or is an external http link (we want local /course-images/)
-      const needsLocal = !course.imageUrl || course.imageUrl.startsWith('http');
+      // Check if image is missing OR is a placeholder/external URL we want to replace with local AI
+      const needsGeneration = !course.imageUrl || course.imageUrl.includes('pollinations') || course.imageUrl.includes('placeholder');
       
-      if (needsLocal) {
+      if (needsGeneration) {
+        // Prevent double triggering
+        if (generatingImages.has(course.id)) return;
+
         setGeneratingImages(prev => new Set(prev).add(course.id));
 
         try {
@@ -80,9 +87,9 @@ export default function DashboardPage() {
           const data = await res.json();
           
           if (data.success && data.imageUrl) {
-            // Update state live
+            // Update state live with the new local path
             setCourses(prev => prev.map(c => 
-              c.id === course.id ? { ...c, imageUrl: data.imageUrl } : c
+              c.id === course.id ? { ...c, imageUrl: `${data.imageUrl}?t=${Date.now()}` } : c
             ));
           }
         } catch (error) {
@@ -98,16 +105,45 @@ export default function DashboardPage() {
     });
   };
 
-  // --- 3. REPORT DOWNLOAD ---
+  // --- 3. PDF REPORT LOGIC ---
   const downloadReport = async () => {
-    const res = await fetch('/api/reports/student');
-    const data = await res.json();
-    const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
-    const url = window.URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `Student_Report_${new Date().toISOString().split('T')[0]}.json`;
-    a.click();
+    try {
+      const res = await fetch('/api/reports/student');
+      const data = await res.json();
+
+      const doc = new jsPDF();
+
+      // Header
+      doc.setFontSize(22);
+      doc.setTextColor(21, 19, 19);
+      doc.text('Student Performance Report', 14, 20);
+      
+      doc.setFontSize(10);
+      doc.setTextColor(100);
+      doc.text(`Generated: ${new Date().toLocaleDateString()}`, 14, 28);
+
+      // Summary
+      autoTable(doc, {
+        startY: 35,
+        head: [['Courses', 'Completed', 'Avg Score']],
+        body: [[data.summary.totalCourses, data.summary.completedCourses, `${data.summary.averageTestScore}%`]],
+        theme: 'grid',
+        headStyles: { fillColor: [21, 19, 19] }
+      });
+
+      // Course Details
+      doc.text('Course Progress', 14, (doc as any).lastAutoTable.finalY + 15);
+      autoTable(doc, {
+        startY: (doc as any).lastAutoTable.finalY + 20,
+        head: [['Course Title', 'Category', 'Progress', 'Status']],
+        body: data.courses.map((c: any) => [c.title, c.category, c.progress, c.status]),
+      });
+
+      doc.save('Student_Report.pdf');
+    } catch (e) {
+      console.error(e);
+      alert("Could not generate report");
+    }
   };
 
   // --- 4. VIEW HELPERS ---
@@ -186,10 +222,10 @@ export default function DashboardPage() {
             >
                <div className="flex items-center gap-2 mb-2">
                   <Download className="w-6 h-6 text-[#151313]" />
-                  <span className="font-bold text-[#151313]">Student Report</span>
+                  <span className="font-bold text-[#151313]">Student Report (PDF)</span>
                </div>
                <p className="text-sm text-[#151313]/80 group-hover:translate-x-1 transition-transform">
-                 Download full performance analytics PDF/JSON
+                 Download full performance analytics
                </p>
             </button>
           </div>
@@ -218,98 +254,76 @@ export default function DashboardPage() {
             </div>
 
             {/* --- COURSE GRID --- */}
-            {filteredCourses.length === 0 ? (
-              <div className="bg-white rounded-3xl p-12 text-center border-2 border-dashed border-gray-300">
-                <p className="text-gray-500 mb-6">No courses found in this category.</p>
-                <Link href="/planner" className="px-8 py-3 bg-[#ff5734] text-white rounded-full font-bold">
-                  Generate Course
-                </Link>
-              </div>
-            ) : (
-              <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
-                {filteredCourses.map((course) => (
-                  <div key={course.id} className="relative group h-full">
-                    <Link href={`/course/${course.id}`} className="block h-full">
-                      <div className="bg-white rounded-3xl p-6 shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all cursor-pointer h-full flex flex-col">
+            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+              {filteredCourses.map((course) => (
+                <div key={course.id} className="relative group h-full">
+                  <Link href={`/course/${course.id}`} className="block h-full">
+                    <div className="bg-white rounded-3xl p-6 shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all cursor-pointer h-full flex flex-col">
+                      
+                      <div className="flex justify-between items-start mb-4">
+                        <span className="px-3 py-1 bg-gray-100 rounded-full text-xs font-bold text-gray-600">
+                          {course.category}
+                        </span>
                         
-                        {/* Header & Actions */}
-                        <div className="flex justify-between items-start mb-4">
-                          <span className="px-3 py-1 bg-gray-100 rounded-full text-xs font-bold text-gray-600">
-                            {course.category}
-                          </span>
-                          
-                          <div className="flex items-center gap-2">
-                             {/* Stats Button (Stops Link Propagation) */}
-                             <button 
-                               onClick={(e) => {
-                                 e.preventDefault();
-                                 e.stopPropagation();
-                                 setSelectedCourse(course);
-                               }}
-                               className="p-2 hover:bg-gray-100 rounded-full text-gray-400 hover:text-[#ff5734] transition-colors relative z-20 group/stat"
-                             >
-                                <BarChart2 className="w-5 h-5" />
-                                <span className="absolute -top-8 right-0 bg-black text-white text-[10px] px-2 py-1 rounded opacity-0 group-hover/stat:opacity-100 transition-opacity whitespace-nowrap pointer-events-none">
-                                  Analytics
-                                </span>
-                             </button>
-                             
-                             <button className="p-2 hover:bg-gray-100 rounded-full text-gray-400 hover:text-gray-600">
-                                <MoreHorizontal className="w-5 h-5" />
-                             </button>
-                          </div>
-                        </div>
-
-                        {/* --- GEMINI AI IMAGE --- */}
-                        <div className="aspect-video rounded-2xl bg-gray-100 mb-4 overflow-hidden relative">
-                           {generatingImages.has(course.id) ? (
-                              <div className="w-full h-full flex flex-col items-center justify-center bg-gray-50 text-gray-400 gap-2">
-                                 <Loader2 className="w-8 h-8 animate-spin text-[#ff5734]" />
-                                 <span className="text-xs font-semibold">Designing Cover...</span>
-                              </div>
-                           ) : (
-                             <>
-                               <img 
-                                 src={course.imageUrl || '/placeholder.jpg'} 
-                                 alt={course.title} 
-                                 className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                                 loading="lazy"
-                                 onError={(e) => {
-                                    e.currentTarget.style.display = 'none';
-                                 }}
-                               />
-                               <div className="absolute inset-0 bg-black/10 group-hover:bg-transparent transition-colors" />
-                             </>
-                           )}
-                        </div>
-
-                        <h3 className="text-xl font-bold text-[#151313] mb-2 line-clamp-2">
-                          {course.title}
-                        </h3>
-
-                        {/* Progress */}
-                        <div className="mt-auto pt-4">
-                          <div className="flex justify-between text-sm text-gray-500 mb-2">
-                            <span className="flex items-center gap-1"><TrendingUp size={14}/> Progress</span>
-                            <span className="font-bold text-[#151313]">{course.progress}%</span>
-                          </div>
-                          <div className="w-full bg-gray-100 rounded-full h-2">
-                            <div
-                              className="h-full rounded-full transition-all duration-500"
-                              style={{
-                                width: `${course.progress}%`,
-                                backgroundColor: course.progress === 100 ? '#4ade80' : (course.colorCode || '#fccc42'),
-                              }}
-                            >
-                            </div>
-                          </div>
+                        <div className="flex items-center gap-2">
+                           <button 
+                             onClick={(e) => {
+                               e.preventDefault();
+                               e.stopPropagation();
+                               setSelectedCourse(course);
+                             }}
+                             className="p-2 hover:bg-gray-100 rounded-full text-gray-400 hover:text-[#ff5734] transition-colors relative z-20 group/stat"
+                           >
+                              <BarChart2 className="w-5 h-5" />
+                           </button>
+                           
+                           <button className="p-2 hover:bg-gray-100 rounded-full text-gray-400 hover:text-gray-600">
+                              <MoreHorizontal className="w-5 h-5" />
+                           </button>
                         </div>
                       </div>
-                    </Link>
-                  </div>
-                ))}
-              </div>
-            )}
+
+                      {/* --- IMAGE --- */}
+                      <div className="aspect-video rounded-2xl bg-gray-100 mb-4 overflow-hidden relative">
+                         {generatingImages.has(course.id) ? (
+                            <div className="w-full h-full flex flex-col items-center justify-center bg-gray-50 text-gray-400 gap-2">
+                               <Loader2 className="w-8 h-8 animate-spin text-[#ff5734]" />
+                               <span className="text-xs font-semibold">Generating Art...</span>
+                            </div>
+                         ) : (
+                           <img 
+                             src={course.imageUrl || '/placeholder.jpg'} 
+                             alt={course.title} 
+                             className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                             onError={(e) => { e.currentTarget.style.display = 'none'; }}
+                           />
+                         )}
+                      </div>
+
+                      <h3 className="text-xl font-bold text-[#151313] mb-2 line-clamp-2">
+                        {course.title}
+                      </h3>
+
+                      <div className="mt-auto pt-4">
+                        <div className="flex justify-between text-sm text-gray-500 mb-2">
+                          <span className="flex items-center gap-1"><TrendingUp size={14}/> Progress</span>
+                          <span className="font-bold text-[#151313]">{course.progress}%</span>
+                        </div>
+                        <div className="w-full bg-gray-100 rounded-full h-2">
+                          <div
+                            className="h-full rounded-full transition-all duration-500"
+                            style={{
+                              width: `${course.progress}%`,
+                              backgroundColor: course.progress === 100 ? '#4ade80' : (course.colorCode || '#fccc42'),
+                            }}
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  </Link>
+                </div>
+              ))}
+            </div>
           </div>
 
           {/* --- BOTTOM SECTION --- */}
@@ -329,38 +343,30 @@ export default function DashboardPage() {
                   <div className="col-span-2 text-right">Duration</div>
                 </div>
 
-                {nextLessons.length > 0 ? (
-                  nextLessons.map((lesson) => (
-                    <Link href={`/course/${lesson.courseId}`} key={lesson.id}>
-                      <div className="grid grid-cols-12 gap-4 py-4 hover:bg-gray-50 rounded-xl transition-colors cursor-pointer items-center group">
-                        <div className="col-span-6">
-                          <div className="font-bold text-[#151313] mb-1 group-hover:text-[#ff5734] transition-colors">
-                            {lesson.title}
-                          </div>
-                          <div className="text-sm text-gray-500">
-                            Video Lesson
-                          </div>
+                {nextLessons.map((lesson) => (
+                  <Link href={`/course/${lesson.courseId}`} key={lesson.id}>
+                    <div className="grid grid-cols-12 gap-4 py-4 hover:bg-gray-50 rounded-xl transition-colors cursor-pointer items-center group">
+                      <div className="col-span-6">
+                        <div className="font-bold text-[#151313] mb-1 group-hover:text-[#ff5734] transition-colors">
+                          {lesson.title}
                         </div>
-                        <div className="col-span-4 flex items-center gap-3">
-                          <div className="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center font-bold text-xs">
-                             {lesson.subtitle.charAt(0)}
-                          </div>
-                          <span className="font-medium text-[#151313] text-sm line-clamp-1">
-                            {lesson.subtitle}
-                          </span>
-                        </div>
-                        <div className="col-span-2 text-right font-semibold text-[#151313] flex items-center justify-end gap-2 text-sm">
-                           <Clock className="w-4 h-4 text-gray-400" />
-                          {lesson.duration}
-                        </div>
+                        <div className="text-sm text-gray-500">Video Lesson</div>
                       </div>
-                    </Link>
-                  ))
-                ) : (
-                  <div className="py-8 text-center text-gray-500">
-                    <p>All caught up! No pending lessons.</p>
-                  </div>
-                )}
+                      <div className="col-span-4 flex items-center gap-3">
+                        <div className="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center font-bold text-xs">
+                           {lesson.subtitle.charAt(0)}
+                        </div>
+                        <span className="font-medium text-[#151313] text-sm line-clamp-1">
+                          {lesson.subtitle}
+                        </span>
+                      </div>
+                      <div className="col-span-2 text-right font-semibold text-[#151313] flex items-center justify-end gap-2 text-sm">
+                         <Clock className="w-4 h-4 text-gray-400" />
+                        {lesson.duration}
+                      </div>
+                    </div>
+                  </Link>
+                ))}
               </div>
             </div>
 
@@ -369,9 +375,7 @@ export default function DashboardPage() {
               <div>
                 <div className="mb-6 relative z-10">
                   <h3 className="text-sm font-semibold text-gray-400 mb-4">Recommendation</h3>
-                  <span className="px-4 py-1.5 bg-[#fccc42] text-[#151313] text-xs font-bold rounded-full inline-block">
-                    AI & Data
-                  </span>
+                  <span className="px-4 py-1.5 bg-[#fccc42] text-[#151313] text-xs font-bold rounded-full inline-block">AI & Data</span>
                 </div>
                 <h2 className="text-2xl font-bold mb-6 leading-tight relative z-10">Want to advance your career?</h2>
                 <p className="text-gray-400 text-sm mb-6">Generate a custom path based on your recent quiz scores.</p>
@@ -383,103 +387,53 @@ export default function DashboardPage() {
               </Link>
             </div>
           </div>
+
+          {/* --- ANALYTICS MODAL --- */}
+          {selectedCourse && (
+            <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 animate-in fade-in duration-200">
+               <div className="bg-white rounded-3xl w-full max-w-2xl overflow-hidden shadow-2xl scale-100 animate-in zoom-in-95 duration-200">
+                  <div className="bg-[#151313] p-6 text-white flex items-center justify-between">
+                     <div className="flex items-center gap-4">
+                        <div className="w-12 h-12 rounded-xl bg-gray-800 overflow-hidden">
+                           <img src={selectedCourse.imageUrl} className="w-full h-full object-cover" />
+                        </div>
+                        <div>
+                           <h3 className="text-xl font-bold">{selectedCourse.title}</h3>
+                           <p className="text-gray-400 text-sm">Course Analytics</p>
+                        </div>
+                     </div>
+                     <button onClick={() => setSelectedCourse(null)} className="p-2 hover:bg-gray-800 rounded-full transition-colors">
+                        <X className="w-6 h-6" />
+                     </button>
+                  </div>
+                  <div className="p-8">
+                     <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
+                        <div className="bg-gray-50 p-4 rounded-2xl border border-gray-100">
+                           <div className="flex items-center gap-2 text-gray-500 text-sm font-bold mb-2">
+                              <Activity className="w-4 h-4 text-[#ff5734]" /> Time Spent
+                           </div>
+                           <h4 className="text-2xl font-bold text-[#151313]">{Math.round(selectedCourse.completedLessons * 0.5)}h 15m</h4>
+                        </div>
+                        <div className="bg-gray-50 p-4 rounded-2xl border border-gray-100">
+                           <div className="flex items-center gap-2 text-gray-500 text-sm font-bold mb-2">
+                              <Zap className="w-4 h-4 text-[#fccc42]" /> Streak
+                           </div>
+                           <h4 className="text-2xl font-bold text-[#151313]">3 Days</h4>
+                        </div>
+                        <div className="bg-gray-50 p-4 rounded-2xl border border-gray-100">
+                           <div className="flex items-center gap-2 text-gray-500 text-sm font-bold mb-2">
+                              <Calendar className="w-4 h-4 text-[#be94f5]" /> Finish
+                           </div>
+                           <h4 className="text-2xl font-bold text-[#151313]">Jan 28</h4>
+                        </div>
+                     </div>
+                     <button onClick={() => setSelectedCourse(null)} className="w-full py-3 bg-[#151313] text-white font-bold rounded-xl hover:bg-gray-800">Close</button>
+                  </div>
+               </div>
+            </div>
+          )}
+
         </main>
-
-        {/* --- ANALYTICS MODAL OVERLAY --- */}
-        {selectedCourse && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 animate-in fade-in duration-200">
-             <div className="bg-white rounded-3xl w-full max-w-2xl overflow-hidden shadow-2xl scale-100 animate-in zoom-in-95 duration-200">
-                
-                {/* Modal Header */}
-                <div className="bg-[#151313] p-6 text-white flex items-center justify-between">
-                   <div className="flex items-center gap-4">
-                      <div className="w-12 h-12 rounded-xl bg-gray-800 overflow-hidden">
-                         <img src={selectedCourse.imageUrl} className="w-full h-full object-cover" />
-                      </div>
-                      <div>
-                         <h3 className="text-xl font-bold">{selectedCourse.title}</h3>
-                         <p className="text-gray-400 text-sm">Course Analytics</p>
-                      </div>
-                   </div>
-                   <button onClick={() => setSelectedCourse(null)} className="p-2 hover:bg-gray-800 rounded-full transition-colors">
-                      <X className="w-6 h-6" />
-                   </button>
-                </div>
-
-                {/* Modal Body */}
-                <div className="p-8">
-                   <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
-                      <div className="bg-gray-50 p-4 rounded-2xl border border-gray-100">
-                         <div className="flex items-center gap-2 text-gray-500 text-sm font-bold mb-2">
-                            <Activity className="w-4 h-4 text-[#ff5734]" /> Time Spent
-                         </div>
-                         <h4 className="text-2xl font-bold text-[#151313]">
-                           {/* Simple estimate logic */}
-                           {Math.round(selectedCourse.completedLessons * 0.5)}h 15m
-                         </h4>
-                      </div>
-                      <div className="bg-gray-50 p-4 rounded-2xl border border-gray-100">
-                         <div className="flex items-center gap-2 text-gray-500 text-sm font-bold mb-2">
-                            <Zap className="w-4 h-4 text-[#fccc42]" /> Current Streak
-                         </div>
-                         <h4 className="text-2xl font-bold text-[#151313]">3 Days</h4>
-                      </div>
-                      <div className="bg-gray-50 p-4 rounded-2xl border border-gray-100">
-                         <div className="flex items-center gap-2 text-gray-500 text-sm font-bold mb-2">
-                            <Calendar className="w-4 h-4 text-[#be94f5]" /> Est. Finish
-                         </div>
-                         <h4 className="text-2xl font-bold text-[#151313]">Jan 28</h4>
-                      </div>
-                   </div>
-
-                   <div className="mb-6">
-                      <div className="flex justify-between items-end mb-2">
-                         <h4 className="font-bold text-gray-800">Learning Mastery</h4>
-                         <span className="text-[#ff5734] font-bold text-sm">Needs Focus</span>
-                      </div>
-                      <div className="space-y-3">
-                         <div className="flex items-center gap-4">
-                            <span className="text-xs font-bold text-gray-500 w-20">Concept</span>
-                            <div className="flex-1 h-2 bg-gray-100 rounded-full">
-                               <div className="h-full bg-[#4ade80] rounded-full w-[85%]"></div>
-                            </div>
-                            <span className="text-xs font-bold">85%</span>
-                         </div>
-                         <div className="flex items-center gap-4">
-                            <span className="text-xs font-bold text-gray-500 w-20">Application</span>
-                            <div className="flex-1 h-2 bg-gray-100 rounded-full">
-                               <div className="h-full bg-[#fccc42] rounded-full w-[60%]"></div>
-                            </div>
-                            <span className="text-xs font-bold">60%</span>
-                         </div>
-                         <div className="flex items-center gap-4">
-                            <span className="text-xs font-bold text-gray-500 w-20">Quizzes</span>
-                            <div className="flex-1 h-2 bg-gray-100 rounded-full">
-                               <div className="h-full bg-[#ff5734] rounded-full w-[40%]"></div>
-                            </div>
-                            <span className="text-xs font-bold">40%</span>
-                         </div>
-                      </div>
-                   </div>
-
-                   <div className="flex justify-end gap-3">
-                      <button 
-                        onClick={() => setSelectedCourse(null)}
-                        className="px-6 py-3 font-bold text-gray-500 hover:text-black transition-colors"
-                      >
-                         Close
-                      </button>
-                      <Link href={`/course/${selectedCourse.id}`}>
-                        <button className="px-6 py-3 bg-[#151313] text-white font-bold rounded-xl hover:bg-gray-800 transition-colors">
-                           Resume Course
-                        </button>
-                      </Link>
-                   </div>
-                </div>
-             </div>
-          </div>
-        )}
-
       </div>
     </div>
   );
