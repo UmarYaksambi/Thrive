@@ -90,6 +90,7 @@ export type Course = {
   totalLessons: number;
   completedLessons: number;
   progress: number;
+  colorCode?: string;
 };
 
 export type Module = {

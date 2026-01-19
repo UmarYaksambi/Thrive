@@ -1,117 +1,149 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
-import { useParams, useRouter } from 'next/navigation';
+import { useState, useEffect } from 'react';
 import { Sidebar } from '@/components/sidebar';
 import { Topbar } from '@/components/topbar';
+import Link from 'next/link';
+// Ensure this path matches your DB definition
+import { Course } from '@/lib/server/courseStore'; 
+import { Chatbot } from '@/components/ui/chatbot'; 
 import { 
-  Play, Download, CheckSquare, FileText, 
-  ChevronDown, ChevronUp, ArrowLeft, ExternalLink, Save
+  Play, Clock, MoreHorizontal, PieChart, Award, Download, 
+  TrendingUp, BarChart2, X, Activity, Calendar, Zap, Loader2, ImageIcon
 } from 'lucide-react';
-import { Course, Module, Lesson } from '@/lib/server/courseStore'; // Using the types we defined
 
-export default function CoursePage() {
-  const params = useParams();
-  const router = useRouter();
-  const [course, setCourse] = useState<Course | null>(null);
+export default function DashboardPage() {
+  // --- STATE MANAGEMENT ---
+  const [courses, setCourses] = useState<Course[]>([]);
   const [loading, setLoading] = useState(true);
-  const [activeModuleId, setActiveModuleId] = useState<string | null>(null);
-  const [currentLesson, setCurrentLesson] = useState<Lesson | null>(null);
-  const [notes, setNotes] = useState('');
-  const [savingNotes, setSavingNotes] = useState(false);
+  const [filter, setFilter] = useState('All');
+  const [stats, setStats] = useState({ avgScore: 0, overallCompletion: 0 });
+  
+  // Track which images are currently being generated to show specific loaders
+  const [generatingImages, setGeneratingImages] = useState<Set<string>>(new Set());
 
-  // 1. Fetch Course Data
-  const fetchCourse = useCallback(async () => {
-    try {
-      const res = await fetch(`/api/courses/${params.id}`);
-      if (!res.ok) throw new Error('Course not found');
-      const data = await res.json();
-      setCourse(data);
-      
-      // Set initial active state
-      if (data.modules.length > 0) {
-        setActiveModuleId(data.modules[0].id);
-        setCurrentLesson(data.modules[0].lessons[0]);
-        setNotes(data.modules[0].lessons[0].notes || '');
-      }
-    } catch (err) {
-      console.error(err);
-    } finally {
-      setLoading(false);
-    }
-  }, [params.id]);
+  // Modal State
+  const [selectedCourse, setSelectedCourse] = useState<Course | null>(null);
 
+  // --- 1. FETCH DATA & INIT ---
   useEffect(() => {
-    fetchCourse();
-  }, [fetchCourse]);
+    const fetchData = async () => {
+      try {
+        // 1. Fetch Courses (Real + Dummy)
+        const courseRes = await fetch('/api/courses');
+        const courseData = await courseRes.json();
+        setCourses(courseData);
+        
+        // 2. Trigger Auto-Generation for missing images
+        checkAndGenerateImages(courseData);
 
-  // 2. Sync Updates to Backend
-  const saveProgress = async (updatedModules: Module[]) => {
-    if (!course) return;
-    
-    // Optimistic Update
-    setCourse({ ...course, modules: updatedModules });
+        // 3. Fetch Calendar Results for Stats
+        const syncRes = await fetch('/api/calendar/sync');
+        const { results } = await syncRes.json();
 
-    // API Call
-    await fetch(`/api/courses/${course.id}`, {
-      method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ modules: updatedModules }),
+        // 4. Calculate Stats
+        const totalProgress = courseData.reduce((acc: number, c: any) => acc + (c.progress || 0), 0);
+        const overallCompletion = courseData.length > 0 ? Math.round(totalProgress / courseData.length) : 0;
+        const totalScore = results.reduce((acc: number, r: any) => acc + r.score, 0);
+        const avgScore = results.length > 0 ? Math.round(totalScore / results.length) : 0;
+
+        setStats({ avgScore, overallCompletion });
+      } catch (error) {
+        console.error('Failed to fetch dashboard data:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchData();
+  }, []);
+
+  // --- 2. IMAGE GENERATION LOGIC ---
+  const checkAndGenerateImages = async (coursesToCheck: Course[]) => {
+    coursesToCheck.forEach(async (course) => {
+      // Check if image is missing or is an external http link (we want local /course-images/)
+      const needsLocal = !course.imageUrl || course.imageUrl.startsWith('http');
+      
+      if (needsLocal) {
+        setGeneratingImages(prev => new Set(prev).add(course.id));
+
+        try {
+          const res = await fetch('/api/courses/image/generate', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ 
+              courseId: course.id, 
+              title: course.title, 
+              category: course.category 
+            })
+          });
+          
+          const data = await res.json();
+          
+          if (data.success && data.imageUrl) {
+            // Update state live
+            setCourses(prev => prev.map(c => 
+              c.id === course.id ? { ...c, imageUrl: data.imageUrl } : c
+            ));
+          }
+        } catch (error) {
+          console.error(`Failed to gen image for ${course.title}`);
+        } finally {
+          setGeneratingImages(prev => {
+            const next = new Set(prev);
+            next.delete(course.id);
+            return next;
+          });
+        }
+      }
     });
   };
 
-  // 3. Handle Lesson Completion
-  const toggleLesson = (moduleId: string, lessonId: string) => {
-    if (!course) return;
-
-    const newModules = course.modules.map((m) => {
-      if (m.id !== moduleId) return m;
-      return {
-        ...m,
-        lessons: m.lessons.map((l) => 
-          l.id === lessonId ? { ...l, completed: !l.completed } : l
-        )
-      };
-    });
-
-    saveProgress(newModules);
-  };
-
-  // 4. Handle Notes Save
-  const saveNotes = async () => {
-    if (!course || !currentLesson) return;
-    setSavingNotes(true);
-
-    // Find the lesson and update its notes property
-    const newModules = course.modules.map(m => ({
-      ...m,
-      lessons: m.lessons.map(l => 
-        l.id === currentLesson.id ? { ...l, notes: notes } : l
-      )
-    }));
-
-    await saveProgress(newModules);
-    setSavingNotes(false);
-  };
-
-  // 5. Handle Report Generation
-  const handleGenerateReport = async () => {
-    const res = await fetch('/api/reports/generate', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ courseId: params.id })
-    });
+  // --- 3. REPORT DOWNLOAD ---
+  const downloadReport = async () => {
+    const res = await fetch('/api/reports/student');
     const data = await res.json();
-    alert(`Report Generated!\n\nStudent: ${data.student}\nProgress: ${data.progress}\nCertificate: ${data.certificateId}`);
+    const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `Student_Report_${new Date().toISOString().split('T')[0]}.json`;
+    a.click();
   };
 
-  // 6. Handle "Download" (Mock)
-  const handleDownload = () => {
-    alert(`Downloading offline pack for "${course?.title}" to local system...`);
-  };
+  // --- 4. VIEW HELPERS ---
+  const filteredCourses = filter === 'All' 
+    ? courses 
+    : courses.filter((c) => c.category === filter);
 
-  if (loading) return <div className="h-screen flex items-center justify-center">Loading Course...</div>;
-  if (!course) return <div className="h-screen flex items-center justify-center">Course not found.</div>;
+  const nextLessons = courses
+    .map((course) => {
+      const activeModule = course.modules.find((m) =>
+        m.lessons.some((l) => !l.completed)
+      );
+      const activeLesson = activeModule?.lessons.find((l) => !l.completed);
+      if (!activeLesson) return null;
+      return {
+        id: activeLesson.id,
+        courseId: course.id,
+        title: activeLesson.title,
+        subtitle: course.title,
+        teacher: 'AI Tutor',
+        duration: activeLesson.duration,
+      };
+    })
+    .filter((item) => item !== null)
+    .slice(0, 5);
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-[#f7f7f5] flex items-center justify-center">
+        <div className="flex flex-col items-center gap-4">
+           <Loader2 className="w-10 h-10 animate-spin text-[#ff5734]" />
+           <div className="text-[#151313] font-bold">Loading Dashboard...</div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-[#f7f7f5]">
@@ -119,164 +151,335 @@ export default function CoursePage() {
       <div className="ml-20">
         <Topbar userName="Learner" />
 
-        <main className="p-8">
-          {/* Breadcrumb / Header */}
-          <div className="mb-6 flex items-center justify-between">
-            <button onClick={() => router.push('/dashboard')} className="flex items-center gap-2 text-gray-500 hover:text-black">
-              <ArrowLeft size={20} /> Back to Dashboard
-            </button>
-            <div className="flex gap-3">
-               <button onClick={handleDownload} className="flex items-center gap-2 px-4 py-2 bg-white border rounded-full text-sm font-bold hover:bg-gray-50">
-                  <Download size={16} /> Offline Mode
-               </button>
-               <button onClick={handleGenerateReport} className="flex items-center gap-2 px-4 py-2 bg-[#151313] text-white rounded-full text-sm font-bold hover:bg-gray-800">
-                  <FileText size={16} /> Generate Report
-               </button>
+        {/* --- LEVITATING CHATBOT --- */}
+        <Chatbot />
+
+        <main className="p-8 relative">
+          
+          {/* --- METRICS HEADER --- */}
+          <div className="mb-8 grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div className="bg-[#151313] text-white p-6 rounded-3xl flex items-center justify-between shadow-lg">
+               <div>
+                  <p className="text-gray-400 text-sm font-semibold mb-1">Overall Progress</p>
+                  <h3 className="text-4xl font-bold">{stats.overallCompletion}%</h3>
+               </div>
+               <div className="w-12 h-12 bg-[#333] rounded-full flex items-center justify-center">
+                  <PieChart className="text-[#fccc42]" />
+               </div>
             </div>
+
+            <div className="bg-white p-6 rounded-3xl flex items-center justify-between shadow-sm border border-gray-100">
+               <div>
+                  <p className="text-gray-500 text-sm font-semibold mb-1">Avg. Test Score</p>
+                  <h3 className={`text-4xl font-bold ${stats.avgScore >= 75 ? 'text-green-600' : 'text-[#151313]'}`}>
+                    {stats.avgScore}%
+                  </h3>
+               </div>
+               <div className="w-12 h-12 bg-gray-50 rounded-full flex items-center justify-center">
+                  <Award className="text-[#ff5734]" />
+               </div>
+            </div>
+
+            <button 
+              onClick={downloadReport}
+              className="bg-[#fccc42] hover:bg-[#f4b91a] transition-colors p-6 rounded-3xl flex flex-col justify-center items-start text-left shadow-sm group"
+            >
+               <div className="flex items-center gap-2 mb-2">
+                  <Download className="w-6 h-6 text-[#151313]" />
+                  <span className="font-bold text-[#151313]">Student Report</span>
+               </div>
+               <p className="text-sm text-[#151313]/80 group-hover:translate-x-1 transition-transform">
+                 Download full performance analytics PDF/JSON
+               </p>
+            </button>
           </div>
 
-          <div className="grid grid-cols-1 xl:grid-cols-3 gap-8">
-            {/* Left Col: Player & Notes */}
-            <div className="xl:col-span-2 space-y-6">
-               
-               {/* "Video" Player Area */}
-               <div className="bg-black rounded-3xl overflow-hidden shadow-lg relative aspect-video group">
-                  <img 
-                    src={course.imageUrl} 
-                    className="w-full h-full object-cover opacity-40 group-hover:opacity-30 transition-opacity" 
-                    alt="Course Cover"
-                  />
-                  <div className="absolute inset-0 flex flex-col items-center justify-center text-white p-6 text-center">
-                     <h2 className="text-3xl font-bold mb-2">{currentLesson?.title}</h2>
-                     <p className="text-gray-300 mb-6">{course.title}</p>
-                     
-                     {currentLesson?.videoUrl && (
-                       <a 
-                         href={currentLesson.videoUrl} 
-                         target="_blank" 
-                         rel="noopener noreferrer"
-                         className="flex items-center gap-3 px-8 py-4 bg-[#ff5734] rounded-full font-bold hover:scale-105 transition-transform"
-                       >
-                          <Play fill="white" /> Watch Lesson on YouTube
-                          <ExternalLink size={16} />
-                       </a>
-                     )}
-                  </div>
-               </div>
-
-               {/* Notes Section */}
-               <div className="bg-white rounded-3xl p-6 shadow-sm">
-                  <div className="flex items-center justify-between mb-4">
-                     <h3 className="font-bold text-xl flex items-center gap-2">
-                        <FileText className="text-[#be94f5]" />
-                        Study Notes
-                     </h3>
-                     <button 
-                       onClick={saveNotes}
-                       disabled={savingNotes}
-                       className="text-sm font-bold text-[#151313] hover:text-[#ff5734] flex items-center gap-1"
-                     >
-                        <Save size={16} /> {savingNotes ? 'Saving...' : 'Save Notes'}
-                     </button>
-                  </div>
-                  <textarea 
-                    value={notes}
-                    onChange={(e) => setNotes(e.target.value)}
-                    placeholder={`Take notes for "${currentLesson?.title}" here...`}
-                    className="w-full h-40 p-4 bg-gray-50 rounded-xl border-0 focus:ring-2 focus:ring-[#be94f5] resize-none"
-                  />
-               </div>
+          {/* --- COURSE FILTERS --- */}
+          <div className="mb-8">
+            <div className="flex items-center justify-between mb-6">
+              <h2 className="text-3xl font-bold text-[#151313]">My courses</h2>
+              <div className="flex gap-2">
+                {['All', 'Computer Science', 'Marketing', 'Business', 'Psychology'].map(
+                  (category) => (
+                    <button
+                      key={category}
+                      onClick={() => setFilter(category)}
+                      className={`px-6 py-2 rounded-full font-semibold text-sm transition-colors ${
+                        filter === category
+                          ? 'bg-[#151313] text-white'
+                          : 'bg-white border-2 border-gray-200 text-[#151313] hover:border-[#151313]'
+                      }`}
+                    >
+                      {category}
+                    </button>
+                  )
+                )}
+              </div>
             </div>
 
-            {/* Right Col: Curriculum */}
-            <div className="space-y-6">
-               {/* Progress Card */}
-               <div className="bg-[#151313] text-white p-6 rounded-3xl shadow-sm">
-                  <h3 className="font-bold text-lg mb-2">Course Progress</h3>
-                  <div className="w-full bg-gray-700 h-2 rounded-full mb-3">
-                     <div 
-                       className="bg-[#fccc42] h-2 rounded-full transition-all duration-500" 
-                       style={{ width: `${course.progress}%` }}
-                     />
-                  </div>
-                  <div className="flex justify-between text-sm text-gray-400">
-                     <span>{course.completedLessons}/{course.totalLessons} Lessons</span>
-                     <span>{course.progress}% Complete</span>
-                  </div>
-               </div>
-
-               {/* Modules List */}
-               <div className="bg-white rounded-3xl p-6 shadow-sm max-h-[600px] overflow-y-auto custom-scrollbar">
-                  <h3 className="font-bold text-xl mb-4">Curriculum</h3>
-                  
-                  <div className="space-y-4">
-                    {course.modules.map((module) => (
-                      <div key={module.id} className="border border-gray-100 rounded-xl overflow-hidden">
-                        <button 
-                          onClick={() => setActiveModuleId(activeModuleId === module.id ? null : module.id)}
-                          className="w-full flex items-center justify-between p-4 bg-gray-50 hover:bg-gray-100 transition-colors"
-                        >
-                          <div className="text-left">
-                            <h4 className="font-bold text-[#151313]">{module.title}</h4>
-                            <span className="text-xs text-gray-500">{module.duration}</span>
+            {/* --- COURSE GRID --- */}
+            {filteredCourses.length === 0 ? (
+              <div className="bg-white rounded-3xl p-12 text-center border-2 border-dashed border-gray-300">
+                <p className="text-gray-500 mb-6">No courses found in this category.</p>
+                <Link href="/planner" className="px-8 py-3 bg-[#ff5734] text-white rounded-full font-bold">
+                  Generate Course
+                </Link>
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+                {filteredCourses.map((course) => (
+                  <div key={course.id} className="relative group h-full">
+                    <Link href={`/course/${course.id}`} className="block h-full">
+                      <div className="bg-white rounded-3xl p-6 shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all cursor-pointer h-full flex flex-col">
+                        
+                        {/* Header & Actions */}
+                        <div className="flex justify-between items-start mb-4">
+                          <span className="px-3 py-1 bg-gray-100 rounded-full text-xs font-bold text-gray-600">
+                            {course.category}
+                          </span>
+                          
+                          <div className="flex items-center gap-2">
+                             {/* Stats Button (Stops Link Propagation) */}
+                             <button 
+                               onClick={(e) => {
+                                 e.preventDefault();
+                                 e.stopPropagation();
+                                 setSelectedCourse(course);
+                               }}
+                               className="p-2 hover:bg-gray-100 rounded-full text-gray-400 hover:text-[#ff5734] transition-colors relative z-20 group/stat"
+                             >
+                                <BarChart2 className="w-5 h-5" />
+                                <span className="absolute -top-8 right-0 bg-black text-white text-[10px] px-2 py-1 rounded opacity-0 group-hover/stat:opacity-100 transition-opacity whitespace-nowrap pointer-events-none">
+                                  Analytics
+                                </span>
+                             </button>
+                             
+                             <button className="p-2 hover:bg-gray-100 rounded-full text-gray-400 hover:text-gray-600">
+                                <MoreHorizontal className="w-5 h-5" />
+                             </button>
                           </div>
-                          {activeModuleId === module.id ? <ChevronUp size={18} /> : <ChevronDown size={18} />}
-                        </button>
+                        </div>
 
-                        {activeModuleId === module.id && (
-                          <div className="divide-y divide-gray-100">
-                            {module.lessons.map((lesson) => (
-                              <div 
-                                key={lesson.id} 
-                                className={`p-3 flex items-center justify-between hover:bg-gray-50 ${currentLesson?.id === lesson.id ? 'bg-[#f0f9ff]' : ''}`}
-                              >
-                                <div 
-                                  className="flex items-center gap-3 cursor-pointer flex-1"
-                                  onClick={() => {
-                                    setCurrentLesson(lesson);
-                                    setNotes(lesson.notes || '');
-                                  }}
-                                >
-                                   <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold ${currentLesson?.id === lesson.id ? 'bg-[#151313] text-white' : 'bg-gray-200 text-gray-600'}`}>
-                                      {lesson.type === 'video' ? <Play size={10} /> : <FileText size={10} />}
-                                   </div>
-                                   <span className={`text-sm font-medium ${currentLesson?.id === lesson.id ? 'text-[#151313]' : 'text-gray-600'}`}>
-                                      {lesson.title}
-                                   </span>
-                                </div>
-                                
-                                <button 
-                                  onClick={() => toggleLesson(module.id, lesson.id)}
-                                  className={`p-1 rounded transition-colors ${lesson.completed ? 'text-[#ff5734]' : 'text-gray-300 hover:text-gray-400'}`}
-                                >
-                                   <CheckSquare size={20} fill={lesson.completed ? "currentColor" : "none"} />
-                                </button>
+                        {/* --- GEMINI AI IMAGE --- */}
+                        <div className="aspect-video rounded-2xl bg-gray-100 mb-4 overflow-hidden relative">
+                           {generatingImages.has(course.id) ? (
+                              <div className="w-full h-full flex flex-col items-center justify-center bg-gray-50 text-gray-400 gap-2">
+                                 <Loader2 className="w-8 h-8 animate-spin text-[#ff5734]" />
+                                 <span className="text-xs font-semibold">Designing Cover...</span>
                               </div>
-                            ))}
+                           ) : (
+                             <>
+                               <img 
+                                 src={course.imageUrl || '/placeholder.jpg'} 
+                                 alt={course.title} 
+                                 className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                                 loading="lazy"
+                                 onError={(e) => {
+                                    e.currentTarget.style.display = 'none';
+                                 }}
+                               />
+                               <div className="absolute inset-0 bg-black/10 group-hover:bg-transparent transition-colors" />
+                             </>
+                           )}
+                        </div>
 
-                            {/* Quiz Entry */}
-                            {module.quiz && (
-                               <div className="p-3 bg-[#fff9ea] flex items-center justify-between cursor-pointer hover:brightness-95">
-                                  <div className="flex items-center gap-3">
-                                     <div className="w-8 h-8 rounded-full bg-[#fccc42] text-[#151313] flex items-center justify-center font-bold">?</div>
-                                     <div>
-                                        <p className="text-sm font-bold text-[#151313]">Module Quiz</p>
-                                        <p className="text-xs text-gray-500">Test your knowledge</p>
-                                     </div>
-                                  </div>
-                                  <button className="px-3 py-1 bg-[#151313] text-white text-xs rounded-full">Start</button>
-                               </div>
-                            )}
+                        <h3 className="text-xl font-bold text-[#151313] mb-2 line-clamp-2">
+                          {course.title}
+                        </h3>
+
+                        {/* Progress */}
+                        <div className="mt-auto pt-4">
+                          <div className="flex justify-between text-sm text-gray-500 mb-2">
+                            <span className="flex items-center gap-1"><TrendingUp size={14}/> Progress</span>
+                            <span className="font-bold text-[#151313]">{course.progress}%</span>
                           </div>
-                        )}
+                          <div className="w-full bg-gray-100 rounded-full h-2">
+                            <div
+                              className="h-full rounded-full transition-all duration-500"
+                              style={{
+                                width: `${course.progress}%`,
+                                backgroundColor: course.progress === 100 ? '#4ade80' : (course.colorCode || '#fccc42'),
+                              }}
+                            >
+                            </div>
+                          </div>
+                        </div>
                       </div>
-                    ))}
+                    </Link>
                   </div>
-               </div>
+                ))}
+              </div>
+            )}
+          </div>
+
+          {/* --- BOTTOM SECTION --- */}
+          <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
+            <div className="xl:col-span-2 bg-white rounded-3xl p-8 shadow-sm">
+              <div className="flex items-center justify-between mb-6">
+                <h2 className="text-2xl font-bold text-[#151313]">My next lessons</h2>
+                <Link href="/calendar" className="text-[#fccc42] font-semibold text-sm hover:underline">
+                  View full schedule
+                </Link>
+              </div>
+
+              <div className="space-y-1">
+                <div className="grid grid-cols-12 gap-4 pb-3 border-b border-gray-200 text-sm font-semibold text-gray-500">
+                  <div className="col-span-6">Lesson</div>
+                  <div className="col-span-4">Course</div>
+                  <div className="col-span-2 text-right">Duration</div>
+                </div>
+
+                {nextLessons.length > 0 ? (
+                  nextLessons.map((lesson) => (
+                    <Link href={`/course/${lesson.courseId}`} key={lesson.id}>
+                      <div className="grid grid-cols-12 gap-4 py-4 hover:bg-gray-50 rounded-xl transition-colors cursor-pointer items-center group">
+                        <div className="col-span-6">
+                          <div className="font-bold text-[#151313] mb-1 group-hover:text-[#ff5734] transition-colors">
+                            {lesson.title}
+                          </div>
+                          <div className="text-sm text-gray-500">
+                            Video Lesson
+                          </div>
+                        </div>
+                        <div className="col-span-4 flex items-center gap-3">
+                          <div className="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center font-bold text-xs">
+                             {lesson.subtitle.charAt(0)}
+                          </div>
+                          <span className="font-medium text-[#151313] text-sm line-clamp-1">
+                            {lesson.subtitle}
+                          </span>
+                        </div>
+                        <div className="col-span-2 text-right font-semibold text-[#151313] flex items-center justify-end gap-2 text-sm">
+                           <Clock className="w-4 h-4 text-gray-400" />
+                          {lesson.duration}
+                        </div>
+                      </div>
+                    </Link>
+                  ))
+                ) : (
+                  <div className="py-8 text-center text-gray-500">
+                    <p>All caught up! No pending lessons.</p>
+                  </div>
+                )}
+              </div>
             </div>
 
+            <div className="bg-[#151313] rounded-3xl p-8 text-white shadow-sm flex flex-col justify-between relative overflow-hidden">
+               <div className="absolute top-0 right-0 w-32 h-32 bg-[#ff5734] rounded-full blur-[60px] opacity-20"></div>
+              <div>
+                <div className="mb-6 relative z-10">
+                  <h3 className="text-sm font-semibold text-gray-400 mb-4">Recommendation</h3>
+                  <span className="px-4 py-1.5 bg-[#fccc42] text-[#151313] text-xs font-bold rounded-full inline-block">
+                    AI & Data
+                  </span>
+                </div>
+                <h2 className="text-2xl font-bold mb-6 leading-tight relative z-10">Want to advance your career?</h2>
+                <p className="text-gray-400 text-sm mb-6">Generate a custom path based on your recent quiz scores.</p>
+              </div>
+              <Link href="/planner">
+                 <button className="w-full py-4 bg-[#ff5734] text-white font-bold rounded-full hover:bg-[#e64d2d] transition-colors relative z-10 shadow-lg shadow-[#ff5734]/30">
+                   Create New Path
+                 </button>
+              </Link>
+            </div>
           </div>
         </main>
+
+        {/* --- ANALYTICS MODAL OVERLAY --- */}
+        {selectedCourse && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 animate-in fade-in duration-200">
+             <div className="bg-white rounded-3xl w-full max-w-2xl overflow-hidden shadow-2xl scale-100 animate-in zoom-in-95 duration-200">
+                
+                {/* Modal Header */}
+                <div className="bg-[#151313] p-6 text-white flex items-center justify-between">
+                   <div className="flex items-center gap-4">
+                      <div className="w-12 h-12 rounded-xl bg-gray-800 overflow-hidden">
+                         <img src={selectedCourse.imageUrl} className="w-full h-full object-cover" />
+                      </div>
+                      <div>
+                         <h3 className="text-xl font-bold">{selectedCourse.title}</h3>
+                         <p className="text-gray-400 text-sm">Course Analytics</p>
+                      </div>
+                   </div>
+                   <button onClick={() => setSelectedCourse(null)} className="p-2 hover:bg-gray-800 rounded-full transition-colors">
+                      <X className="w-6 h-6" />
+                   </button>
+                </div>
+
+                {/* Modal Body */}
+                <div className="p-8">
+                   <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
+                      <div className="bg-gray-50 p-4 rounded-2xl border border-gray-100">
+                         <div className="flex items-center gap-2 text-gray-500 text-sm font-bold mb-2">
+                            <Activity className="w-4 h-4 text-[#ff5734]" /> Time Spent
+                         </div>
+                         <h4 className="text-2xl font-bold text-[#151313]">
+                           {/* Simple estimate logic */}
+                           {Math.round(selectedCourse.completedLessons * 0.5)}h 15m
+                         </h4>
+                      </div>
+                      <div className="bg-gray-50 p-4 rounded-2xl border border-gray-100">
+                         <div className="flex items-center gap-2 text-gray-500 text-sm font-bold mb-2">
+                            <Zap className="w-4 h-4 text-[#fccc42]" /> Current Streak
+                         </div>
+                         <h4 className="text-2xl font-bold text-[#151313]">3 Days</h4>
+                      </div>
+                      <div className="bg-gray-50 p-4 rounded-2xl border border-gray-100">
+                         <div className="flex items-center gap-2 text-gray-500 text-sm font-bold mb-2">
+                            <Calendar className="w-4 h-4 text-[#be94f5]" /> Est. Finish
+                         </div>
+                         <h4 className="text-2xl font-bold text-[#151313]">Jan 28</h4>
+                      </div>
+                   </div>
+
+                   <div className="mb-6">
+                      <div className="flex justify-between items-end mb-2">
+                         <h4 className="font-bold text-gray-800">Learning Mastery</h4>
+                         <span className="text-[#ff5734] font-bold text-sm">Needs Focus</span>
+                      </div>
+                      <div className="space-y-3">
+                         <div className="flex items-center gap-4">
+                            <span className="text-xs font-bold text-gray-500 w-20">Concept</span>
+                            <div className="flex-1 h-2 bg-gray-100 rounded-full">
+                               <div className="h-full bg-[#4ade80] rounded-full w-[85%]"></div>
+                            </div>
+                            <span className="text-xs font-bold">85%</span>
+                         </div>
+                         <div className="flex items-center gap-4">
+                            <span className="text-xs font-bold text-gray-500 w-20">Application</span>
+                            <div className="flex-1 h-2 bg-gray-100 rounded-full">
+                               <div className="h-full bg-[#fccc42] rounded-full w-[60%]"></div>
+                            </div>
+                            <span className="text-xs font-bold">60%</span>
+                         </div>
+                         <div className="flex items-center gap-4">
+                            <span className="text-xs font-bold text-gray-500 w-20">Quizzes</span>
+                            <div className="flex-1 h-2 bg-gray-100 rounded-full">
+                               <div className="h-full bg-[#ff5734] rounded-full w-[40%]"></div>
+                            </div>
+                            <span className="text-xs font-bold">40%</span>
+                         </div>
+                      </div>
+                   </div>
+
+                   <div className="flex justify-end gap-3">
+                      <button 
+                        onClick={() => setSelectedCourse(null)}
+                        className="px-6 py-3 font-bold text-gray-500 hover:text-black transition-colors"
+                      >
+                         Close
+                      </button>
+                      <Link href={`/course/${selectedCourse.id}`}>
+                        <button className="px-6 py-3 bg-[#151313] text-white font-bold rounded-xl hover:bg-gray-800 transition-colors">
+                           Resume Course
+                        </button>
+                      </Link>
+                   </div>
+                </div>
+             </div>
+          </div>
+        )}
+
       </div>
     </div>
   );
