@@ -1,12 +1,36 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createClient } from '@supabase/supabase-js';
+import { createServerClient } from '@supabase/ssr';
+import { cookies } from 'next/headers';
 
 export const maxDuration = 300;
 
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-);
+// 1. Define the correct type for the cookie store (The awaited result of cookies())
+type CookieStore = Awaited<ReturnType<typeof cookies>>;
+
+// 2. Update helper to accept the resolved CookieStore
+const getSupabase = (cookieStore: CookieStore) => {
+  return createServerClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    {
+      cookies: {
+        getAll() {
+          return cookieStore.getAll()
+        },
+        setAll(cookiesToSet) {
+          try {
+            cookiesToSet.forEach(({ name, value, options }) =>
+              cookieStore.set(name, value, options)
+            )
+          } catch {
+            // The `setAll` method was called from a Server Component.
+            // This can be ignored if you have middleware refreshing user sessions.
+          }
+        },
+      },
+    }
+  );
+}
 
 const PASTEL_COLORS = [
   // Lavender / Purple
@@ -69,6 +93,13 @@ const PASTEL_COLORS = [
 ];
 
 export async function GET(req: NextRequest) {
+  /* 
+    REAL DATABASE IMPLEMENTATION 
+  */
+  // const supabase = getSupabase(cookieStore); 
+  const cookieStore = await cookies();
+  const supabase = getSupabase(cookieStore);
+
   const { searchParams } = new URL(req.url);
   const search = searchParams.get('search');
   const lang = searchParams.get('lang');
@@ -78,6 +109,7 @@ export async function GET(req: NextRequest) {
   let query = supabase
     .from('library_items')
     .select('*')
+    .eq('status', 'approved')
     .order('created_at', { ascending: false });
 
   if (search) {
@@ -121,6 +153,15 @@ export async function GET(req: NextRequest) {
 
 export async function POST(req: NextRequest) {
   try {
+    const cookieStore = await cookies();
+    const supabase = getSupabase(cookieStore);
+
+    // Verify user is authenticated
+    const { data: { user }, error: authError } = await supabase.auth.getUser();
+    if (authError || !user) {
+      return NextResponse.json({ error: 'Unauthorized: Please log in to contribute.' }, { status: 401 });
+    }
+
     const formData = await req.formData();
     const title = formData.get('title') as string;
     const creator = formData.get('creator') as string;
@@ -143,6 +184,8 @@ export async function POST(req: NextRequest) {
       const arrayBuffer = await file.arrayBuffer();
       const buffer = new Uint8Array(arrayBuffer);
 
+      // Upload uses same authenticated client, RLS on storage should also allow auth users
+      // Note: Assuming 'library_assets' bucket RLS allows INSERT for auth users.
       const { error: uploadError } = await supabase.storage
         .from('library_assets')
         .upload(fileName, buffer, {
@@ -173,10 +216,9 @@ export async function POST(req: NextRequest) {
         language,
         tags,
         resource_url: resourceUrl,
-        thumbnail_color:
-          PASTEL_COLORS[
-            Math.floor(Math.random() * PASTEL_COLORS.length)
-          ],
+        thumbnail_color: PASTEL_COLORS[Math.floor(Math.random() * PASTEL_COLORS.length)],
+        status: 'pending',
+        submitted_by: user.id // <--- IMPORTANT: Link to user
       })
       .select()
       .single();

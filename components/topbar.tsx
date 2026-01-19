@@ -10,11 +10,7 @@ interface TopbarProps {
   userHandle?: string;
 }
 
-export function Topbar({
-  userName = 'Umar Yaksambi',
-  userAvatar,
-  userHandle = '@UmarYaksambi',
-}: TopbarProps) {
+export function Topbar({ userName = 'Learner', userAvatar, userHandle }: TopbarProps) {
   return (
     <div className="h-20 flex items-center justify-between px-8 bg-white/50 backdrop-blur-sm border-b border-gray-200">
       <Link
@@ -66,12 +62,8 @@ export function Topbar({
             )}
           </div>
           <div className="text-sm">
-            <div className="font-semibold text-[#151313]">
-              {userName}
-            </div>
-            <div className="text-gray-500 text-xs">
-              {userHandle}
-            </div>
+            <div className="font-semibold text-[#151313]">{userName}</div>
+            {userHandle && <div className="text-gray-500 text-xs">{userHandle}</div>}
           </div>
         </div>
       </div>

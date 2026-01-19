@@ -424,7 +424,7 @@ export default function LandingPage() {
         </h1>
         <div className="flex items-center gap-4">
           <Link
-            href="/dashboard"
+            href="/login"
             className="px-6 py-2.5 text-[#151313] font-semibold hover:text-[#C2AAFB] transition-colors"
           >
             Sign In
