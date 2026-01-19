@@ -2,8 +2,8 @@ import { cookies } from 'next/headers';
 import { createServerClient } from '@supabase/ssr';
 import { NextRequest, NextResponse } from 'next/server';
 
-function createSupabase() {
-  const cookieStore = cookies();
+async function createSupabase() {
+  const cookieStore = await cookies();
   return createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
@@ -42,7 +42,7 @@ export async function GET(
 ) {
   try {
     const classroomId = params.id;
-    const supabase = createSupabase();
+    const supabase = await createSupabase();
     const { data: { user }, error: authError } = await supabase.auth.getUser();
 
     if (authError || !user) {
@@ -107,7 +107,7 @@ export async function DELETE(
 ) {
   try {
     const classroomId = params.id;
-    const supabase = createSupabase();
+    const supabase = await createSupabase();
     const { data: { user }, error: authError } = await supabase.auth.getUser();
 
     if (authError || !user) {
@@ -168,7 +168,7 @@ export async function PATCH(
     const body = await request.json();
     const { name, description, regenerateCode } = body;
 
-    const supabase = createSupabase();
+    const supabase = await createSupabase();
     const { data: { user }, error: authError } = await supabase.auth.getUser();
 
     if (authError || !user) {

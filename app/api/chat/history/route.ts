@@ -31,7 +31,7 @@ const createClient = (cookieStore: any) => {
 };
 
 export async function GET(request: Request) {
-  const cookieStore = cookies();
+  const cookieStore = await cookies();
   const supabase = createClient(cookieStore);
 
   const { searchParams } = new URL(request.url);
@@ -89,7 +89,7 @@ export async function GET(request: Request) {
 
 // --- NEW DELETE METHOD ---
 export async function DELETE(request: Request) {
-  const cookieStore = cookies();
+  const cookieStore = await cookies();
   const supabase = createClient(cookieStore);
 
   const { searchParams } = new URL(request.url);

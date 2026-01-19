@@ -3,8 +3,8 @@ import { createServerClient } from '@supabase/ssr';
 import { NextRequest, NextResponse } from 'next/server';
 
 // Helper to create authenticated Supabase client
-function createSupabase() {
-  const cookieStore = cookies();
+async function createSupabase() {
+  const cookieStore = await cookies();
   return createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
@@ -40,7 +40,7 @@ function createServiceSupabase() {
 // GET: Fetch teacher's classrooms with student counts
 export async function GET(request: NextRequest) {
   try {
-    const supabase = createSupabase();
+    const supabase = await createSupabase();
     const { data: { user }, error: authError } = await supabase.auth.getUser();
 
     if (authError || !user) {
@@ -98,7 +98,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Classroom name is required' }, { status: 400 });
     }
 
-    const supabase = createSupabase();
+    const supabase = await createSupabase();
     const { data: { user }, error: authError } = await supabase.auth.getUser();
 
     if (authError || !user) {

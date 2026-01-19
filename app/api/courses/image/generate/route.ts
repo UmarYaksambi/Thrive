@@ -49,7 +49,7 @@ export async function POST(req: Request) {
     const fileName = `${courseId}.png`; // Saving as PNG
     const filePath = path.join(publicDir, fileName);
     
-    await fs.writeFile(filePath, imageBuffer);
+    await fs.writeFile(filePath, imageBuffer as unknown as Uint8Array);
     const localUrl = `/course-images/${fileName}`;
 
     // 5. Update Database

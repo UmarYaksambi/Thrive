@@ -6,7 +6,7 @@ import { Topbar } from '@/components/topbar';
 import { JoinClassroom } from '@/components/student/join-classroom';
 
 export default async function StudentClassroomsPage() {
-  const cookieStore = cookies();
+  const cookieStore = await cookies();
 
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,

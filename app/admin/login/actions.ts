@@ -1,22 +1,30 @@
 'use server'
 
-import { createServerClient, type CookieOptions } from '@supabase/ssr'
+import { createServerClient } from '@supabase/ssr'
 import { cookies } from 'next/headers'
 import { redirect } from 'next/navigation'
 
-function getSupabase() {
-  const cookieStore = cookies()
+async function getSupabase() {
+  const cookieStore = await cookies()
+
   return createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
     {
       cookies: {
-        get(name: string) { return cookieStore.get(name)?.value },
-        set(name: string, value: string, options: CookieOptions) {
-          cookieStore.set({ name, value, ...options })
+        // Updated to use getAll/setAll for best compatibility with Next.js 15
+        getAll() {
+          return cookieStore.getAll()
         },
-        remove(name: string, options: CookieOptions) {
-          cookieStore.set({ name, value: '', ...options })
+        setAll(cookiesToSet) {
+          try {
+            cookiesToSet.forEach(({ name, value, options }) =>
+              cookieStore.set(name, value, options)
+            )
+          } catch {
+            // The `setAll` method was called from a Server Component.
+            // This can be ignored if you have middleware refreshing user sessions.
+          }
         },
       },
     }
@@ -24,19 +32,28 @@ function getSupabase() {
 }
 
 export async function adminLogin(formData: FormData) {
-  const supabase = getSupabase()
+  // 1. FIX: You must await the client initialization
+  const supabase = await getSupabase()
+  
   const email = formData.get('email') as string
   const password = formData.get('password') as string
 
-  // 1. Attempt Sign In
+  // 2. Attempt Sign In
   const { error } = await supabase.auth.signInWithPassword({ email, password })
 
   if (error) {
     redirect(`/admin/login?error=${encodeURIComponent(error.message)}`)
   }
 
-  // 2. Verify Role (Strict Admin/Supervisor check)
-  const { data: role } = await supabase.rpc('get_user_role')
+  // 3. Verify Role (RPC Call)
+  // We check for error here just in case the RPC fails unexpectedly
+  const { data: role, error: rpcError } = await supabase.rpc('get_user_role')
+  
+  if (rpcError) {
+    await supabase.auth.signOut()
+    redirect('/admin/login?error=System error: Unable to verify permissions.')
+  }
+
   const roleValue = String(role || '')
 
   if (roleValue !== 'admin' && roleValue !== 'supervisor') {
@@ -45,6 +62,6 @@ export async function adminLogin(formData: FormData) {
     redirect('/admin/login?error=Unauthorized: Access restricted to administrators only.')
   }
 
-  // 3. Redirect to Admin Dashboard
+  // 4. Redirect to Admin Dashboard
   redirect('/admin')
 }

@@ -6,7 +6,7 @@ import { Topbar } from '@/components/topbar';
 import { TeacherDashboard } from '@/components/teacher/teacher-dashboard';
 
 export default async function TeacherPage() {
-  const cookieStore = cookies();
+  const cookieStore = await cookies();
 
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
