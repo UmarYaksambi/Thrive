@@ -1,11 +1,23 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import {
+  Tabs,
+  TabsContent,
+  TabsList,
+  TabsTrigger,
+} from '@/components/ui/tabs';
 import { Progress } from '@/components/ui/progress';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from '@/components/ui/card';
+import { Check } from 'lucide-react';
 import { StudentProgress } from './student-progress';
 import { CourseManagement } from './course-management';
 import { DocumentApproval } from './document-approval';
@@ -15,16 +27,57 @@ interface AdminDashboardProps {
   userRole: 'admin' | 'teacher' | 'supervisor';
 }
 
-export function AdminDashboard({ userId, userRole }: AdminDashboardProps) {
+export function AdminDashboard({
+  userId,
+  userRole,
+}: AdminDashboardProps) {
   const [activeTab, setActiveTab] = useState('progress');
+  const [statsData, setStatsData] = useState<any>(null);
+  const [classrooms, setClassrooms] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
   const router = useRouter();
 
-  // Mock data - replace with actual data fetching
-  const stats = [
-    { name: 'Total Students', value: '1,234', change: '+12%', changeType: 'positive' },
-    { name: 'Active Courses', value: '24', change: '+2', changeType: 'positive' },
-    { name: 'Pending Approvals', value: '15', change: '-3', changeType: 'negative' },
-    { name: 'Completion Rate', value: '78%', change: '+5%', changeType: 'positive' },
+  useEffect(() => {
+    fetchAdminStats();
+  }, []);
+
+  const fetchAdminStats = async () => {
+    try {
+      setLoading(true);
+      const response = await fetch('/api/admin/stats');
+      const data = await response.json();
+      if (response.ok) {
+        setStatsData(data.stats);
+        setClassrooms(data.classrooms);
+      }
+    } catch (error) {
+      console.error('Error fetching admin stats:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const statCards = [
+    {
+      name: 'Total Students',
+      value: statsData?.totalStudents || 0,
+      icon: 'Users',
+    },
+    {
+      name: 'Active Classrooms',
+      value: statsData?.totalClassrooms || 0,
+      icon: 'Home',
+    },
+    {
+      name: 'Global Resources',
+      value: statsData?.totalResources || 0,
+      icon: 'Book',
+    },
+    {
+      name: 'Submissions',
+      value: statsData?.totalSubmissions || 0,
+      icon: 'Check',
+    },
   ];
 
   return (
@@ -38,17 +91,21 @@ export function AdminDashboard({ userId, userRole }: AdminDashboardProps) {
             </div>
             <div>
               <p className="font-medium">Admin Dashboard</p>
-              <p className="text-xs text-gray-500">{userRole.charAt(0).toUpperCase() + userRole.slice(1)}</p>
+              <p className="text-xs text-gray-500">
+                {userRole.charAt(0).toUpperCase() +
+                  userRole.slice(1)}
+              </p>
             </div>
           </div>
 
           <nav className="space-y-1">
             <button
               onClick={() => setActiveTab('progress')}
-              className={`w-full flex items-center px-4 py-3 text-sm font-medium rounded-lg transition-colors ${activeTab === 'progress'
+              className={`w-full flex items-center px-4 py-3 text-sm font-medium rounded-lg transition-colors ${
+                activeTab === 'progress'
                   ? 'bg-[#f0e9ff] text-[#8b5cf6]'
                   : 'text-gray-700 hover:bg-gray-100'
-                }`}
+              }`}
             >
               <svg
                 className="mr-3 h-5 w-5"
@@ -64,10 +121,11 @@ export function AdminDashboard({ userId, userRole }: AdminDashboardProps) {
 
             <button
               onClick={() => setActiveTab('courses')}
-              className={`w-full flex items-center px-4 py-3 text-sm font-medium rounded-lg transition-colors ${activeTab === 'courses'
+              className={`w-full flex items-center px-4 py-3 text-sm font-medium rounded-lg transition-colors ${
+                activeTab === 'courses'
                   ? 'bg-[#f0e9ff] text-[#8b5cf6]'
                   : 'text-gray-700 hover:bg-gray-100'
-                }`}
+              }`}
             >
               <svg
                 className="mr-3 h-5 w-5"
@@ -84,10 +142,11 @@ export function AdminDashboard({ userId, userRole }: AdminDashboardProps) {
 
             <button
               onClick={() => setActiveTab('documents')}
-              className={`w-full flex items-center px-4 py-3 text-sm font-medium rounded-lg transition-colors ${activeTab === 'documents'
+              className={`w-full flex items-center px-4 py-3 text-sm font-medium rounded-lg transition-colors ${
+                activeTab === 'documents'
                   ? 'bg-[#f0e9ff] text-[#8b5cf6]'
                   : 'text-gray-700 hover:bg-gray-100'
-                }`}
+              }`}
             >
               <svg
                 className="mr-3 h-5 w-5"
@@ -104,6 +163,29 @@ export function AdminDashboard({ userId, userRole }: AdminDashboardProps) {
               </svg>
               Document Approval
             </button>
+            <button
+              onClick={() => setActiveTab('classrooms')}
+              className={`w-full flex items-center px-4 py-3 text-sm font-medium rounded-lg transition-colors ${
+                activeTab === 'classrooms'
+                  ? 'bg-[#f0e9ff] text-[#8b5cf6]'
+                  : 'text-gray-700 hover:bg-gray-100'
+              }`}
+            >
+              <svg
+                className="mr-3 h-5 w-5"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth="2"
+                  d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"
+                />
+              </svg>
+              Classroom Analytics
+            </button>
           </nav>
         </div>
       </div>
@@ -114,34 +196,41 @@ export function AdminDashboard({ userId, userRole }: AdminDashboardProps) {
           <h1 className="text-2xl font-bold text-gray-900">
             {activeTab === 'progress' && 'Student Progress'}
             {activeTab === 'courses' && 'Course Management'}
-            {activeTab === 'documents' && 'Document Approval'}
+            {activeTab === 'documents' &&
+              'Document Approval'}
+            {activeTab === 'classrooms' &&
+              'Classroom Analytics'}
           </h1>
           <p className="mt-1 text-sm text-gray-500">
-            {activeTab === 'progress' && 'Track and manage student progress across all courses'}
-            {activeTab === 'courses' && 'Create, edit, and publish courses for students'}
-            {activeTab === 'documents' && 'Review and approve documents for the library'}
+            {activeTab === 'progress' &&
+              'Track and manage student progress across all courses'}
+            {activeTab === 'courses' &&
+              'Create, edit, and publish courses for students'}
+            {activeTab === 'documents' &&
+              'Review and approve documents for the library'}
+            {activeTab === 'classrooms' &&
+              'Monitor classroom engagement and expansion'}
           </p>
         </div>
 
         {/* Stats Overview */}
         <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4 mb-8">
-          {stats.map((stat) => (
-            <Card key={stat.name} className="bg-white rounded-xl shadow-sm">
+          {statCards.map((stat) => (
+            <Card
+              key={stat.name}
+              className="bg-white rounded-xl shadow-sm border-none"
+            >
               <CardContent className="p-6">
-                <div className="flex items-center justify-between">
-                  <p className="text-sm font-medium text-gray-500">{stat.name}</p>
-                  <span
-                    className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${stat.changeType === 'positive'
-                        ? 'bg-green-100 text-green-800'
-                        : 'bg-red-100 text-red-800'
-                      }`}
-                  >
-                    {stat.change}
-                  </span>
-                </div>
-                <p className="mt-1 text-2xl font-semibold text-gray-900">{stat.value}</p>
-                <div className="mt-2">
-                  <Progress value={78} className="h-2 bg-gray-100" />
+                <p className="text-xs font-bold text-gray-400 uppercase tracking-widest">
+                  {stat.name}
+                </p>
+                <div className="flex items-end justify-between mt-2">
+                  <p className="text-3xl font-black text-gray-900">
+                    {stat.value}
+                  </p>
+                  <div className="w-8 h-8 rounded-lg bg-gray-50 flex items-center justify-center text-gray-300">
+                    <Check className="w-4 h-4" />
+                  </div>
                 </div>
               </CardContent>
             </Card>
@@ -149,10 +238,58 @@ export function AdminDashboard({ userId, userRole }: AdminDashboardProps) {
         </div>
 
         {/* Tab Content */}
-        <div className="bg-white rounded-xl shadow-sm p-6">
-          {activeTab === 'progress' && <StudentProgress userRole={userRole} />}
+        <div className="bg-white rounded-xl shadow-sm p-6 overflow-hidden">
+          {activeTab === 'progress' && (
+            <StudentProgress userRole={userRole} />
+          )}
           {activeTab === 'courses' && <CourseManagement />}
-          {activeTab === 'documents' && <DocumentApproval currentUserId={userId} />}
+          {activeTab === 'documents' && (
+            <DocumentApproval currentUserId={userId} />
+          )}
+          {activeTab === 'classrooms' && (
+            <div className="space-y-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {classrooms.map((c) => (
+                  <Card
+                    key={c.id}
+                    className="border-none shadow-sm hover:shadow-md transition-all bg-gray-50/50"
+                  >
+                    <CardHeader className="pb-2">
+                      <CardTitle className="text-lg font-bold">
+                        {c.name}
+                      </CardTitle>
+                      <CardDescription>
+                        Created{' '}
+                        {new Date(
+                          c.created_at
+                        ).toLocaleDateString()}
+                      </CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="flex items-center justify-between mt-4">
+                        <div className="flex items-center gap-2">
+                          <div className="w-8 h-8 rounded-full bg-purple-100 flex items-center justify-center text-purple-600 font-bold text-xs">
+                            {c.studentCount}
+                          </div>
+                          <span className="text-xs font-bold text-gray-500 uppercase tracking-widest">
+                            Students
+                          </span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <div className="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 font-bold text-xs">
+                            {c.teacherCount}
+                          </div>
+                          <span className="text-xs font-bold text-gray-500 uppercase tracking-widest">
+                            Teachers
+                          </span>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
       </div>
     </div>
