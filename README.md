@@ -58,7 +58,7 @@ Meet **Unenthusiastic AI**, an AI tutor that refuses to spoon-feed answers.
 - 🧠 **Context-Aware Conversations**  
   Remembers course state, prior questions, and learning goals.
 
-> Learning happens through thinking — Spiked makes sure of it.
+> Learning happens through thinking — Unenthusiastic AI makes sure of it.
 
 ---
 
