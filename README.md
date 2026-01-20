@@ -5,6 +5,9 @@
 
 ---
 
+[💚 Live Platform](https://thrive-learn.vercel.app)
+
+
 ## 🌍 Why Thrive?
 
 Access to quality education should not depend on bandwidth, geography, or language.
@@ -249,7 +252,7 @@ See `LICENSE` for details.
 
 
 [GitHub](https://github.com/UmarYaksambi/thrive) •
-[Website](https://thrive.vercel.app) •
+[Website](https://thrive-learn.vercel.app) •
 [Donate](https://https://buymeacoffee.com/UmarYaksambi)
 
 </div>
