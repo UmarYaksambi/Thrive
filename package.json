@@ -85,7 +85,9 @@
   },
   "devDependencies": {
     "@types/fs-extra": "^11.0.4",
-    "@types/serviceworker": "^0.0.172"
+    "@types/serviceworker": "^0.0.172",
+    "husky": "^9.1.7",
+    "prettier": "^3.8.0"
   },
   "lint-staged": {
     "*.{js,ts,jsx,tsx,json,css,md}": "prettier --write"
