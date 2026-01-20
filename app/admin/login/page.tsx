@@ -9,23 +9,22 @@ import { useSearchParams } from 'next/navigation';
 
 const anton = Anton({ subsets: ['latin'], weight: '400' });
 
-export default function AdminLoginPage({
-  searchParams,
-}: {
-  searchParams: { error?: string };
-}) {
+export default function AdminLoginPage() {
+  const searchParams = useSearchParams();
+  const error = searchParams.get('error');
+
   return (
     <div className="min-h-screen bg-[#151313] flex items-center justify-center p-6">
       <div className="w-full max-w-md bg-white rounded-[2rem] p-10 shadow-2xl border border-gray-100 relative overflow-hidden">
-
-        {/* Red admin stripe */}
         <div className="absolute top-0 left-0 w-full h-2 bg-gradient-to-r from-red-500 to-red-700" />
 
         <div className="text-center mb-8">
           <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
             <Shield className="w-8 h-8 text-red-600" />
           </div>
-          <h1 className={`${anton.className} text-4xl mb-2`}>
+          <h1
+            className={`${anton.className} text-4xl mb-2`}
+          >
             <span className="text-red-500">Admin</span>
             <span className="text-[#151313]"> Login</span>
           </h1>
@@ -34,9 +33,9 @@ export default function AdminLoginPage({
           </p>
         </div>
 
-        {searchParams?.error && (
+        {error && (
           <div className="bg-red-50 text-red-600 p-4 rounded-2xl text-sm mb-6 font-semibold border border-red-100 animate-in fade-in slide-in-from-top-2">
-            {searchParams.error}
+            {error}
           </div>
         )}
 
@@ -79,7 +78,10 @@ export default function AdminLoginPage({
 
         <p className="text-center text-gray-400 text-sm mt-6">
           Need an account?{' '}
-          <Link href="/admin/signup" className="text-[#151313] font-bold hover:underline">
+          <Link
+            href="/admin/signup"
+            className="text-[#151313] font-bold hover:underline"
+          >
             Use Invite Code
           </Link>
         </p>
