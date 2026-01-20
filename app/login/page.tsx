@@ -108,7 +108,7 @@ export default function LoginPage() {
               name="fullName"
               type="text"
               disabled={isLoginModel}
-              className="w-full px-6 py-4 rounded-full border-2 border-gray-100 focus:border-[#D8C4FB] outline-none transition-all placeholder:text-gray-300"
+              className="block w-full px-6 py-4 rounded-full border-2 border-gray-100 focus:border-[#D8C4FB] outline-none transition-all placeholder:text-gray-300"
               placeholder="John Doe"
             />
           </div>
@@ -147,7 +147,7 @@ export default function LoginPage() {
                 : 'max-h-0 opacity-0'
             )}
           >
-            <label className="block text-sm font-bold text-[#151313] mb-2 ml-4 text-amber-600 flex items-center gap-2">
+            <label className="text-sm font-bold text-amber-600 mb-2 ml-4 flex items-center gap-2">
               <BookOpen className="w-4 h-4" /> Teacher
               Invite Code
             </label>
