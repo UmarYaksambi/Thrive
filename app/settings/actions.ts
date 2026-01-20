@@ -14,10 +14,11 @@ const ALLOWED_TYPES = [
   'image/gif',
   'image/webp',
 ];
-const MAX_FILE_SIZE = 2 * 1024 * 1024; // 2MB
+const MAX_FILE_SIZE = 2 * 1024 * 1024;
 
-function getSupabase() {
-  const cookieStore = cookies();
+async function getSupabase() {
+  const cookieStore = await cookies();
+
   return createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
@@ -34,55 +35,53 @@ function getSupabase() {
           cookieStore.set({ name, value, ...options });
         },
         remove(name: string, options: CookieOptions) {
-          cookieStore.set({ name, value: '', ...options });
+          cookieStore.set({
+            name,
+            value: '',
+            ...options,
+            maxAge: 0,
+          });
         },
       },
     }
   );
 }
 
-/**
- * Helper to delete all files in a user's storage folder
- */
 async function deleteUserStorageFiles(
   supabase: any,
   userId: string
 ) {
-  // 1. List all files in the user's specific folder
-  const { data: files, error: listError } =
-    await supabase.storage.from('avatars').list(userId);
+  const { data: files, error } = await supabase.storage
+    .from('avatars')
+    .list(userId);
 
-  if (listError) {
-    console.error(
-      'Error listing files:',
-      listError.message
-    );
+  if (error) {
+    console.error('Error listing files:', error.message);
     return;
   }
 
-  if (files && files.length > 0) {
-    // 2. Map file names to full paths (userId/filename)
-    const filesToRemove = files.map(
-      (x: any) => `${userId}/${x.name}`
+  if (!files || files.length === 0) return;
+
+  const filesToRemove = files.map(
+    (x: any) => `${userId}/${x.name}`
+  );
+
+  const { error: removeError } = await supabase.storage
+    .from('avatars')
+    .remove(filesToRemove);
+
+  if (removeError) {
+    console.error(
+      'Error removing files:',
+      removeError.message
     );
-
-    // 3. Delete the files from the bucket
-    const { error: removeError } = await supabase.storage
-      .from('avatars')
-      .remove(filesToRemove);
-
-    if (removeError) {
-      console.error(
-        'Error removing files from storage:',
-        removeError.message
-      );
-    }
   }
 }
 
 export async function uploadAvatar(formData: FormData) {
-  const supabase = getSupabase();
+  const supabase = await getSupabase();
   const file = formData.get('file') as File;
+
   const {
     data: { user },
   } = await supabase.auth.getUser();
@@ -91,11 +90,11 @@ export async function uploadAvatar(formData: FormData) {
     throw new Error('Unauthorized or missing file');
 
   if (file.size > MAX_FILE_SIZE)
-    throw new Error('File size exceeds 2MB limit.');
-  if (!ALLOWED_TYPES.includes(file.type))
-    throw new Error('Invalid file type.');
+    throw new Error('File size exceeds 2MB limit');
 
-  // --- NEW: Clean up old files before uploading a new one ---
+  if (!ALLOWED_TYPES.includes(file.type))
+    throw new Error('Invalid file type');
+
   await deleteUserStorageFiles(supabase, user.id);
 
   const fileExt = file.name.split('.').pop();
@@ -125,17 +124,16 @@ export async function uploadAvatar(formData: FormData) {
 }
 
 export async function removeAvatar() {
-  const supabase = getSupabase();
+  const supabase = await getSupabase();
+
   const {
     data: { user },
   } = await supabase.auth.getUser();
 
   if (!user) throw new Error('Unauthorized');
 
-  // --- NEW: Delete the physical file from the bucket ---
   await deleteUserStorageFiles(supabase, user.id);
 
-  // Update the profile table
   const { error } = await supabase
     .from('profiles')
     .update({ avatar_url: null })
@@ -147,18 +145,17 @@ export async function removeAvatar() {
 }
 
 export async function deleteAccountAction() {
-  const supabase = getSupabase();
+  const supabase = await getSupabase();
+
   const {
     data: { user },
   } = await supabase.auth.getUser();
 
   if (!user) return;
 
-  // --- NEW: Clean up storage before deleting the account ---
   await deleteUserStorageFiles(supabase, user.id);
 
   const { error } = await supabase.rpc('delete_user');
-
   if (error) throw new Error('Could not delete account');
 
   await supabase.auth.signOut();
@@ -166,10 +163,12 @@ export async function deleteAccountAction() {
 }
 
 export async function updateProfile(formData: FormData) {
-  const supabase = getSupabase();
+  const supabase = await getSupabase();
+
   const {
     data: { user },
   } = await supabase.auth.getUser();
+
   if (!user) throw new Error('Not authenticated');
 
   const updates = {
@@ -184,6 +183,7 @@ export async function updateProfile(formData: FormData) {
   const { error } = await supabase
     .from('profiles')
     .upsert(updates);
+
   if (error) throw new Error(error.message);
 
   revalidatePath('/settings');

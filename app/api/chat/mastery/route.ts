@@ -6,7 +6,7 @@ import {
 } from '@supabase/ssr';
 
 export async function GET(request: Request) {
-  const cookieStore = cookies();
+  const cookieStore = await cookies();
 
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -39,13 +39,11 @@ export async function GET(request: Request) {
     data: { user },
   } = await supabase.auth.getUser();
 
-  // --- FIX: Add the same fallback ID here ---
   if (!user) {
     user = {
       id: '41162d70-c555-4503-b84a-c925380d4f2c',
     } as any;
   }
-  // ----------------------------------------
 
   const { data: topics, error } = await supabase
     .from('topic_mastery')
