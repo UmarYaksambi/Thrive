@@ -11,7 +11,7 @@ const withPWA = require('next-pwa')({
         cacheName: 'google-fonts-webfonts',
         expiration: {
           maxEntries: 4,
-          maxAgeSeconds: 365 * 24 * 60 * 60, // 365 days
+          maxAgeSeconds: 365 * 24 * 60 * 60,
         },
       },
     },
@@ -23,7 +23,7 @@ const withPWA = require('next-pwa')({
         cacheName: 'static-font-assets',
         expiration: {
           maxEntries: 4,
-          maxAgeSeconds: 7 * 24 * 60 * 60, // 7 days
+          maxAgeSeconds: 7 * 24 * 60 * 60,
         },
       },
     },
@@ -34,7 +34,7 @@ const withPWA = require('next-pwa')({
         cacheName: 'static-image-assets',
         expiration: {
           maxEntries: 64,
-          maxAgeSeconds: 24 * 60 * 60, // 24 hours
+          maxAgeSeconds: 24 * 60 * 60,
         },
       },
     },
@@ -89,7 +89,7 @@ const withPWA = require('next-pwa')({
         cacheName: 'api-cache',
         expiration: {
           maxEntries: 16,
-          maxAgeSeconds: 5 * 60, // 5 minutes
+          maxAgeSeconds: 5 * 60,
         },
         networkTimeoutSeconds: 10,
       },
@@ -97,14 +97,9 @@ const withPWA = require('next-pwa')({
   ],
 });
 
+/** @type {import('next').NextConfig} */
 const nextConfig = {
-  eslint: {
-    ignoreDuringBuilds: true,
-  },
-  images: { unoptimized: true },
-  experimental: {
-    serverActions: true,
-  },
+  reactStrictMode: true,
 };
 
 module.exports = withPWA(nextConfig);
