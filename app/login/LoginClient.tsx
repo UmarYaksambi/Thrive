@@ -152,6 +152,15 @@ export default function LoginClient() {
               ? 'Create an account'
               : 'Already have an account?'}
           </button>
+
+          <div className="pt-4 border-t border-gray-100 mt-4 text-center">
+            <a
+              href="/admin/login"
+              className="text-xs text-gray-400 hover:text-gray-600 transition-colors"
+            >
+              Administrator Login
+            </a>
+          </div>
         </form>
       </div>
     </div>

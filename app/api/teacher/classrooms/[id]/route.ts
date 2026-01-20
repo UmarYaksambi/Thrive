@@ -35,6 +35,21 @@ async function createSupabase() {
   );
 }
 
+function createServiceSupabase() {
+  return createServerClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.SUPABASE_SERVICE_ROLE_KEY!,
+    {
+      cookies: {
+        getAll() {
+          return [];
+        },
+        setAll() {},
+      },
+    }
+  );
+}
+
 /* ---------------------------------------------------------
    GET: Fetch single classroom
 ---------------------------------------------------------- */
@@ -45,15 +60,32 @@ export async function GET(
   try {
     const { id } = await params; // ✅ REQUIRED in Next 16
 
-    const supabase = await createSupabase();
+    const serviceSupabase = createServiceSupabase();
 
-    const { data: classroom, error } = await supabase
+    const { data: classroom, error } = await serviceSupabase
       .from('classrooms')
-      .select('*')
+      .select(
+        `
+        *,
+        members:classroom_members(
+          id,
+          user_id,
+          role,
+          joined_at,
+          profile:profiles(
+            id,
+            full_name,
+            email,
+            avatar_url
+          )
+        )
+      `
+      )
       .eq('id', id)
       .single();
 
     if (error) {
+      console.error('Fetch error:', error);
       return NextResponse.json(
         { error: error.message },
         { status: 400 }
@@ -68,7 +100,8 @@ export async function GET(
     }
 
     return NextResponse.json(classroom);
-  } catch {
+  } catch (error: any) {
+    console.error('API Error:', error);
     return NextResponse.json(
       { error: 'Internal server error' },
       { status: 500 }
