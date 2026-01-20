@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { getCourses, getQuizResults } from '@/lib/server/courseStore';
+import { QuizResult } from '@/lib/types';
 
 export async function GET() {
   try {
@@ -9,7 +10,7 @@ export async function GET() {
     // Calculate aggregates
     const totalCourses = courses.length;
     const completedCourses = courses.filter((c: any) => c.progress === 100).length;
-    
+
     const totalScore = results.reduce((acc: number, r: any) => acc + r.score, 0);
     const avgScore = results.length > 0 ? Math.round(totalScore / results.length) : 0;
 

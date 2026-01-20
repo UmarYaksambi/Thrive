@@ -1,12 +1,10 @@
-'use client';;
+'use client';
 import { use } from "react";
-
 import Link from 'next/link';
 import { Anton } from 'next/font/google';
 import { Input } from '@/components/ui/input';
 import { Shield } from 'lucide-react';
 import { adminLogin } from './actions';
-import { useSearchParams } from 'next/navigation';
 
 const anton = Anton({ subsets: ['latin'], weight: '400' });
 

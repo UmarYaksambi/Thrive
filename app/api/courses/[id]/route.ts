@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
-import { getCourseById, updateCourse, Course } from '@/lib/server/courseStore';
+import { getCourseById, updateCourse } from '@/lib/server/courseStore';
+import { Module, Lesson } from '@/lib/types';
 
 // GET specific course
 export async function GET(req: Request, { params }: { params: Promise<{ id: string }> }) {

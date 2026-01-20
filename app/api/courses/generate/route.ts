@@ -1,7 +1,8 @@
 import { NextResponse } from 'next/server';
 import OpenAI from 'openai';
 import { GoogleGenerativeAI } from '@google/generative-ai';
-import { saveCourse, Course } from '@/lib/server/courseStore';
+import { saveCourse } from '@/lib/server/courseStore';
+import { Course, Module, Lesson, Quiz } from '@/lib/types';
 import { v4 as uuidv4 } from 'uuid';
 import fs from 'fs-extra';
 import path from 'path';
@@ -36,7 +37,7 @@ async function downloadAndSaveImage(url: string, courseId: string): Promise<stri
   } catch (error) {
     console.error("Failed to save image locally:", error);
     // Fallback to a default placeholder if download fails
-    return '/images/placeholder-course.jpg'; 
+    return '/images/placeholder-course.jpg';
   }
 }
 
@@ -83,14 +84,14 @@ export async function POST(req: Request) {
     const aiData = JSON.parse(completion.choices[0].message.content || '{}');
 
     // --- STEP 2: Generate Image Prompt (Gemini) ---
-    const model = genAI.getGenerativeModel({ model: 'gemini-pro' });
+    const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
     const imagePromptQuery = `Describe a minimal, high-quality, 3D abstract digital art background image for a course titled "${aiData.title}". 
     The image should represent the concept of ${topic}. 
     Output ONLY the visual description keywords, separated by commas. No intro/outro.`;
-    
+
     const imageResult = await model.generateContent(imagePromptQuery);
     const imageKeywords = imageResult.response.text();
-    
+
     // Generate the external URL
     const encodedPrompt = encodeURIComponent(imageKeywords);
     const tempImageUrl = `https://image.pollinations.ai/prompt/${encodedPrompt}?width=800&height=600&nologo=true&seed=${Math.floor(Math.random() * 1000)}`;

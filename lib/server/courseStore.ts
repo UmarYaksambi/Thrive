@@ -1,6 +1,7 @@
 import fs from 'fs-extra';
 import path from 'path';
 import { v4 as uuidv4 } from 'uuid';
+import { CalendarNote, Course, Module, Lesson, Quiz, QuizResult } from '@/lib/types';
 
 // This mimics a database by storing JSON files in a "data" folder in your project root
 const DB_PATH = path.join(process.cwd(), 'data', 'courses.json');
@@ -9,12 +10,6 @@ const CALENDAR_NOTES_PATH = path.join(process.cwd(), 'data', 'calendar-notes.jso
 
 const ensureDataDir = async () => {
   await fs.ensureDir(path.join(process.cwd(), 'data'));
-};
-
-// --- TYPES ---
-export type CalendarNote = {
-  date: string; // YYYY-MM-DD
-  note: string;
 };
 
 // --- DATA ACCESSORS ---
@@ -40,24 +35,6 @@ export const saveCalendarNote = async (noteEntry: CalendarNote) => {
   await fs.writeJson(CALENDAR_NOTES_PATH, notes, { spaces: 2 });
 };
 
-export type QuizResult = {
-  id: string;
-  courseId: string;
-  moduleId: string;
-  studentId: string; // "Learner" for now
-  score: number;
-  totalQuestions: number;
-  dateTaken: string;
-  answers: {
-    questionId: string;
-    questionText: string;
-    selectedAnswer: string;
-    correctAnswer: string;
-    isCorrect: boolean;
-  }[];
-  feedback?: string; // AI generated summary of performance
-};
-
 export const saveQuizResult = async (result: QuizResult) => {
   if (!fs.existsSync(RESULTS_PATH)) {
     await fs.outputJson(RESULTS_PATH, []);
@@ -74,49 +51,6 @@ export const getQuizResults = async (courseId?: string) => {
     return results.filter(r => r.courseId === courseId);
   }
   return results;
-};
-
-
-
-export type Course = {
-  id: string;
-  title: string;
-  description: string;
-  category: string;
-  level: string;
-  imageUrl: string;
-  startDate: string;
-  modules: Module[];
-  totalLessons: number;
-  completedLessons: number;
-  progress: number;
-  colorCode?: string;
-};
-
-export type Module = {
-  id: string;
-  title: string;
-  duration: string;
-  lessons: Lesson[];
-  quiz?: Quiz;
-};
-
-export type Lesson = {
-  id: string;
-  title: string;
-  duration: string;
-  type: 'video' | 'reading';
-  videoUrl?: string; // YouTube search link or direct link
-  completed: boolean;
-  notes?: string;
-};
-
-export type Quiz = {
-  id: string;
-  title: string;
-  questions: { question: string; options: string[]; answer: string }[];
-  completed: boolean;
-  score?: number;
 };
 
 // Initialize DB

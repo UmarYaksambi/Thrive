@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { GoogleGenerativeAI } from '@google/generative-ai';
-import { updateCourse, getCourseById, saveCourse, Course } from '@/lib/server/courseStore'; // Ensure saveCourse is exported
+import { updateCourse, getCourseById } from '@/lib/server/courseStore';
+import { Course } from '@/lib/types'; // Ensure saveCourse is exported
 import fs from 'fs-extra';
 import path from 'path';
 import axios from 'axios';
@@ -13,7 +14,7 @@ async function saveImageLocally(url: string, courseId: string): Promise<string> 
   await fs.ensureDir(publicDir);
   const fileName = `${courseId}.jpg`;
   const filePath = path.join(publicDir, fileName);
-  
+
   const response = await axios({ url, method: 'GET', responseType: 'arraybuffer' });
   await fs.writeFile(filePath, response.data);
   return `/course-images/${fileName}`;
@@ -25,11 +26,11 @@ export async function POST(req: Request) {
 
     // 1. Check if course exists in DB (if not, it might be a dummy course we need to persist)
     let course = await getCourseById(courseId);
-    
+
     // 2. Ask Gemini for a visual prompt
-    const model = genAI.getGenerativeModel({ model: 'gemini-pro' });
+    const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
     const prompt = `Create a short, vivid, comma-separated visual description for a high-quality 3D digital art cover image for a course titled "${title}" in the category of "${category}". No text in image. Minimalist, modern style.`;
-    
+
     const result = await model.generateContent(prompt);
     const visualKeywords = result.response.text();
 

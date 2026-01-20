@@ -15,10 +15,10 @@ export async function GET() {
     // We filter out duplicates based on ID just in case
     const dbCourseIds = new Set(dbCourses.map((c: any) => c.id));
     const mergedCourses = [
-      ...INITIAL_COURSES.filter(c => !dbCourseIds.has(c.id)), 
+      ...INITIAL_COURSES.filter(c => !dbCourseIds.has(c.id)),
       ...dbCourses
     ];
-    
+
     return NextResponse.json({ courses: mergedCourses, results, notes });
   } catch (error) {
     console.error("Calendar Sync Error:", error);

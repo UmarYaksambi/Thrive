@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
-import { saveCalendarNote } from '@/lib/server/courseStore';
+import { getCalendarNotes, saveCalendarNote } from '@/lib/server/courseStore';
+import { CalendarNote } from '@/lib/types';
 
 export async function POST(req: Request) {
   try {

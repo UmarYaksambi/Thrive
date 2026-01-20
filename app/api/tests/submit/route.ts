@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
-import { saveQuizResult, QuizResult } from '@/lib/server/courseStore';
+import { getCourseById, saveQuizResult } from '@/lib/server/courseStore';
+import { QuizResult } from '@/lib/types';
 import { v4 as uuidv4 } from 'uuid';
 
 export async function POST(req: Request) {
@@ -27,7 +28,7 @@ export async function POST(req: Request) {
       id: uuidv4(),
       courseId,
       moduleId,
-      studentId: "Learner", 
+      studentId: "Learner",
       score,
       totalQuestions: originalQuestions.length,
       dateTaken: new Date().toISOString(),

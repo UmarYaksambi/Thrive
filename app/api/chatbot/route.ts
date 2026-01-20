@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import OpenAI from 'openai';
-import { getCourses } from '@/lib/server/courseStore';
+import { getCourses, getCalendarNotes } from '@/lib/server/courseStore';
+import { Course, CalendarNote } from '@/lib/types';
 import { INITIAL_COURSES } from '@/lib/initial-data';
 
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
@@ -12,8 +13,8 @@ export async function POST(req: Request) {
     // 1. Gather Context
     const dbCourses = await getCourses();
     const allCourses = [...INITIAL_COURSES, ...dbCourses];
-    
-    const courseSummary = allCourses.map(c => 
+
+    const courseSummary = allCourses.map(c =>
       `- ${c.title} (${c.category}): ${c.progress}% complete. Level: ${c.level}.`
     ).join('\n');
 
@@ -33,9 +34,9 @@ export async function POST(req: Request) {
       model: "gpt-3.5-turbo",
     });
 
-    return NextResponse.json({ 
-      role: 'assistant', 
-      content: completion.choices[0].message.content 
+    return NextResponse.json({
+      role: 'assistant',
+      content: completion.choices[0].message.content
     });
 
   } catch (error) {

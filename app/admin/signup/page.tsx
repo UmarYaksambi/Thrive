@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
-import { useRouter, useSearchParams } from 'next/navigation';
+import { useRouter } from 'next/navigation';
 import { Anton } from 'next/font/google';
 import { Input } from '@/components/ui/input';
 
@@ -10,7 +10,7 @@ const anton = Anton({ subsets: ['latin'], weight: '400' });
 
 export default function AdminSignupPage() {
   const router = useRouter();
-  const searchParams = useSearchParams();
+  // const searchParams = useSearchParams(); 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [formData, setFormData] = useState({
