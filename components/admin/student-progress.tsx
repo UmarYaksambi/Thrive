@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { createClient } from '@/utils/supabase/client';
+import { createClient } from '@/lib/supabase/client';
 import {
   Table,
   TableBody,
@@ -14,12 +14,19 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Search, Filter, Download } from 'lucide-react';
 
-export function StudentProgress({ userRole }: { userRole: string }) {
+export function StudentProgress({
+  userRole,
+}: {
+  userRole: string;
+}) {
   const [students, setStudents] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
-  const [selectedCourse, setSelectedCourse] = useState('all');
-  const [courses, setCourses] = useState<{id: string, title: string}[]>([]);
+  const [selectedCourse, setSelectedCourse] =
+    useState('all');
+  const [courses, setCourses] = useState<
+    { id: string; title: string }[]
+  >([]);
   const supabase = createClient();
 
   useEffect(() => {
@@ -30,14 +37,16 @@ export function StudentProgress({ userRole }: { userRole: string }) {
   const fetchStudents = async () => {
     try {
       setLoading(true);
-      
+
       let query = supabase
         .from('student_progress')
-        .select(`
+        .select(
+          `
           *,
-          user:user_id(id, email, raw_user_meta_data->>'full_name' as full_name),
+          user:profiles!user_id(id, email, full_name),
           course:course_id(id, title)
-        `)
+        `
+        )
         .order('last_accessed', { ascending: false });
 
       if (selectedCourse !== 'all') {
@@ -47,7 +56,7 @@ export function StudentProgress({ userRole }: { userRole: string }) {
       if (searchTerm) {
         query = query.or(
           `user.raw_user_meta_data->>'full_name'.ilike.%${searchTerm}%,` +
-          `user.email.ilike.%${searchTerm}%`
+            `user.email.ilike.%${searchTerm}%`
         );
       }
 
@@ -79,21 +88,36 @@ export function StudentProgress({ userRole }: { userRole: string }) {
   const handleExport = () => {
     // Implement export functionality
     const csvContent = [
-      ['Student Name', 'Email', 'Course', 'Progress', 'Last Accessed'],
-      ...students.map(student => [
+      [
+        'Student Name',
+        'Email',
+        'Course',
+        'Progress',
+        'Last Accessed',
+      ],
+      ...students.map((student) => [
         student.user?.full_name || 'N/A',
         student.user?.email || 'N/A',
         student.course?.title || 'N/A',
         `${student.progress_percentage}%`,
-        new Date(student.last_accessed).toLocaleDateString(),
-      ])
-    ].map(row => row.join(',')).join('\n');
+        new Date(
+          student.last_accessed
+        ).toLocaleDateString(),
+      ]),
+    ]
+      .map((row) => row.join(','))
+      .join('\n');
 
-    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const blob = new Blob([csvContent], {
+      type: 'text/csv;charset=utf-8;',
+    });
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.setAttribute('href', url);
-    link.setAttribute('download', `student-progress-${new Date().toISOString().split('T')[0]}.csv`);
+    link.setAttribute(
+      'download',
+      `student-progress-${new Date().toISOString().split('T')[0]}.csv`
+    );
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
@@ -110,15 +134,19 @@ export function StudentProgress({ userRole }: { userRole: string }) {
             className="pl-10 w-full"
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            onKeyDown={(e) => e.key === 'Enter' && fetchStudents()}
+            onKeyDown={(e) =>
+              e.key === 'Enter' && fetchStudents()
+            }
           />
         </div>
-        
+
         <div className="flex gap-2 w-full sm:w-auto">
           <select
             className="flex h-10 w-full sm:w-48 rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
             value={selectedCourse}
-            onChange={(e) => setSelectedCourse(e.target.value)}
+            onChange={(e) =>
+              setSelectedCourse(e.target.value)
+            }
           >
             <option value="all">All Courses</option>
             {courses.map((course) => (
@@ -127,12 +155,12 @@ export function StudentProgress({ userRole }: { userRole: string }) {
               </option>
             ))}
           </select>
-          
+
           <Button variant="outline" onClick={fetchStudents}>
             <Filter className="h-4 w-4 mr-2" />
             Filter
           </Button>
-          
+
           <Button variant="outline" onClick={handleExport}>
             <Download className="h-4 w-4 mr-2" />
             Export
@@ -149,33 +177,47 @@ export function StudentProgress({ userRole }: { userRole: string }) {
               <TableHead>Progress</TableHead>
               <TableHead>Completed</TableHead>
               <TableHead>Last Accessed</TableHead>
-              <TableHead className="text-right">Actions</TableHead>
+              <TableHead className="text-right">
+                Actions
+              </TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {loading ? (
               <TableRow>
-                <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
+                <TableCell
+                  colSpan={6}
+                  className="text-center py-8 text-muted-foreground"
+                >
                   Loading student data...
                 </TableCell>
               </TableRow>
             ) : students.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
-                  No students found. Try adjusting your filters.
+                <TableCell
+                  colSpan={6}
+                  className="text-center py-8 text-muted-foreground"
+                >
+                  No students found. Try adjusting your
+                  filters.
                 </TableCell>
               </TableRow>
             ) : (
               students.map((student) => (
-                <TableRow key={`${student.user_id}-${student.course_id}`}>
+                <TableRow
+                  key={`${student.user_id}-${student.course_id}`}
+                >
                   <TableCell className="font-medium">
                     <div className="flex items-center gap-3">
                       <div className="h-10 w-10 rounded-full bg-gray-100 flex items-center justify-center">
-                        {student.user?.full_name?.charAt(0) || 'U'}
+                        {student.user?.full_name?.charAt(
+                          0
+                        ) || 'U'}
                       </div>
                       <div>
                         <div className="font-medium">
-                          {student.user?.full_name || 'Unknown User'}
+                          {student.user?.full_name ||
+                            'Unknown User'}
                         </div>
                         <div className="text-sm text-muted-foreground">
                           {student.user?.email}
@@ -183,27 +225,37 @@ export function StudentProgress({ userRole }: { userRole: string }) {
                       </div>
                     </div>
                   </TableCell>
-                  <TableCell>{student.course?.title || 'N/A'}</TableCell>
+                  <TableCell>
+                    {student.course?.title || 'N/A'}
+                  </TableCell>
                   <TableCell>
                     <div className="flex items-center gap-2">
                       <div className="w-24">
                         <div className="h-2 bg-gray-200 rounded-full overflow-hidden">
-                          <div 
-                            className="h-full bg-[#8b5cf6]" 
-                            style={{ width: `${student.progress_percentage}%` }}
+                          <div
+                            className="h-full bg-[#8b5cf6]"
+                            style={{
+                              width: `${student.progress_percentage}%`,
+                            }}
                           />
                         </div>
                       </div>
                       <span className="text-sm text-muted-foreground">
-                        {Math.round(student.progress_percentage)}%
+                        {Math.round(
+                          student.progress_percentage
+                        )}
+                        %
                       </span>
                     </div>
                   </TableCell>
                   <TableCell>
-                    {student.completed_lessons} / {student.total_lessons} lessons
+                    {student.completed_lessons} /{' '}
+                    {student.total_lessons} lessons
                   </TableCell>
                   <TableCell>
-                    {new Date(student.last_accessed).toLocaleDateString()}
+                    {new Date(
+                      student.last_accessed
+                    ).toLocaleDateString()}
                   </TableCell>
                   <TableCell className="text-right">
                     <Button variant="ghost" size="sm">

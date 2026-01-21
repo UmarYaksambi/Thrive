@@ -1,7 +1,10 @@
 import { createServerClient } from '@supabase/ssr';
-import { NextResponse, type NextRequest } from 'next/server';
+import {
+  NextResponse,
+  type NextRequest,
+} from 'next/server';
 
-// Routes that require authentication
+// Authenticated routes
 const protectedRoutes = [
   '/dashboard',
   '/chat',
@@ -9,15 +12,15 @@ const protectedRoutes = [
   '/planner',
   '/calendar',
   '/settings',
-  '/downloads',
   '/course',
   '/admin',
   '/teacher',
 ];
 
-// Routes that are always public (no auth required)
+// Public routes
 const publicRoutes = [
   '/',
+  '/downloads',
   '/login',
   '/admin/login',
   '/admin/signup',
@@ -27,10 +30,16 @@ export async function middleware(request: NextRequest) {
   const res = NextResponse.next();
   const path = request.nextUrl.pathname;
 
-  // Skip middleware for public routes
-  if (publicRoutes.some(route => path === route || path.startsWith(route + '/'))) {
-    // Exception: /admin/login and /admin/signup are public, but /admin itself is not
-    if (path === '/admin/login' || path === '/admin/signup') {
+  if (
+    publicRoutes.some(
+      (route) =>
+        path === route || path.startsWith(route + '/')
+    )
+  ) {
+    if (
+      path === '/admin/login' ||
+      path === '/admin/signup'
+    ) {
       return res;
     }
     if (path === '/' || path === '/login') {
@@ -38,16 +47,15 @@ export async function middleware(request: NextRequest) {
     }
   }
 
-  // Check if this is a protected route
-  const isProtectedRoute = protectedRoutes.some(route =>
-    path === route || path.startsWith(route + '/')
+  const isProtectedRoute = protectedRoutes.some(
+    (route) =>
+      path === route || path.startsWith(route + '/')
   );
 
   if (!isProtectedRoute) {
-    return res; // Allow other routes (like API, static files, etc.)
+    return res;
   }
 
-  // Create Supabase client
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
@@ -57,18 +65,27 @@ export async function middleware(request: NextRequest) {
           return request.cookies.getAll();
         },
         setAll(cookiesToSet) {
-          cookiesToSet.forEach(({ name, value, options }: any) => {
-            res.cookies.set(name, value, options);
-          });
+          cookiesToSet.forEach(
+            ({ name, value, options }: any) => {
+              res.cookies.set(name, value, options);
+            }
+          );
         },
       },
     }
   );
 
-  const { data: { user } } = await supabase.auth.getUser();
+  let user = null;
+  try {
+    const {
+      data: { user: authUser },
+    } = await supabase.auth.getUser();
+    user = authUser;
+  } catch (error) {
+    console.error('Middleware Auth Error:', error);
+  }
 
   // === GLOBAL AUTH CHECK ===
-  // If user is not logged in and trying to access a protected route, redirect to login
   if (!user) {
     const url = request.nextUrl.clone();
     url.pathname = '/login';
@@ -79,10 +96,18 @@ export async function middleware(request: NextRequest) {
   // === ROLE-BASED PROTECTION ===
 
   // 1. Admin Routes Protection (stricter)
-  if (path.startsWith('/admin') && !path.startsWith('/admin/signup') && !path.startsWith('/admin/login')) {
-    const { data: role, error: roleError } = await supabase.rpc('get_user_role');
+  if (
+    path.startsWith('/admin') &&
+    !path.startsWith('/admin/signup') &&
+    !path.startsWith('/admin/login')
+  ) {
+    const { data: role, error: roleError } =
+      await supabase.rpc('get_user_role');
 
-    if (roleError || !['admin', 'supervisor'].includes(String(role || ''))) {
+    if (
+      roleError ||
+      !['admin', 'supervisor'].includes(String(role || ''))
+    ) {
       const url = request.nextUrl.clone();
       url.pathname = '/dashboard';
       url.searchParams.set('error', 'unauthorized');
@@ -92,10 +117,16 @@ export async function middleware(request: NextRequest) {
 
   // 2. Teacher Routes Protection
   if (path.startsWith('/teacher')) {
-    const { data: role, error: roleError } = await supabase.rpc('get_user_role');
+    const { data: role, error: roleError } =
+      await supabase.rpc('get_user_role');
 
     // Teachers AND Admins/Supervisors can access teacher routes
-    if (roleError || !['teacher', 'admin', 'supervisor'].includes(String(role || ''))) {
+    if (
+      roleError ||
+      !['teacher', 'admin', 'supervisor'].includes(
+        String(role || '')
+      )
+    ) {
       const url = request.nextUrl.clone();
       url.pathname = '/dashboard';
       url.searchParams.set('error', 'unauthorized');
@@ -119,4 +150,3 @@ export const config = {
     '/((?!_next/static|_next/image|favicon.ico|icons|manifest.json|api).*)',
   ],
 };
-

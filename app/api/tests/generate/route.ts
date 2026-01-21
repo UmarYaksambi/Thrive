@@ -1,11 +1,13 @@
 import { NextResponse } from 'next/server';
 import OpenAI from 'openai';
 
-const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
-
 export async function POST(req: Request) {
+  const openai = new OpenAI({
+    apiKey: process.env.OPENAI_API_KEY,
+  });
   try {
-    const { topic, difficulty, questionCount } = await req.json();
+    const { topic, difficulty, questionCount } =
+      await req.json();
 
     const prompt = `Generate a generic multiple-choice quiz about "${topic}".
     Difficulty: ${difficulty}.
@@ -25,20 +27,31 @@ export async function POST(req: Request) {
       ]
     }`;
 
-    const completion = await openai.chat.completions.create({
-      messages: [
-        { role: 'system', content: 'You are a strict JSON quiz generator.' },
-        { role: 'user', content: prompt }
-      ],
-      model: 'gpt-3.5-turbo-1106',
-      response_format: { type: 'json_object' },
-    });
+    const completion = await openai.chat.completions.create(
+      {
+        messages: [
+          {
+            role: 'system',
+            content:
+              'You are a strict JSON quiz generator.',
+          },
+          { role: 'user', content: prompt },
+        ],
+        model: 'gpt-3.5-turbo-1106',
+        response_format: { type: 'json_object' },
+      }
+    );
 
-    const quizData = JSON.parse(completion.choices[0].message.content || '{}');
-    
+    const quizData = JSON.parse(
+      completion.choices[0].message.content || '{}'
+    );
+
     return NextResponse.json(quizData);
   } catch (error) {
-    console.error("Quiz generation failed:", error);
-    return NextResponse.json({ error: 'Failed to generate quiz' }, { status: 500 });
+    console.error('Quiz generation failed:', error);
+    return NextResponse.json(
+      { error: 'Failed to generate quiz' },
+      { status: 500 }
+    );
   }
 }
