@@ -43,8 +43,15 @@ export function StudentProgress({
         .select(
           `
           *,
-          user:profiles!user_id(id, email, full_name),
-          course:course_id(id, title)
+          user:profiles!user_id(
+            id,
+            email,
+            full_name
+          ),
+          course:courses!course_id(
+            id,
+            title
+          )
         `
         )
         .order('last_accessed', { ascending: false });
@@ -55,14 +62,17 @@ export function StudentProgress({
 
       if (searchTerm) {
         query = query.or(
-          `user.raw_user_meta_data->>'full_name'.ilike.%${searchTerm}%,` +
-            `user.email.ilike.%${searchTerm}%`
+          `user.full_name.ilike.%${searchTerm}%,user.email.ilike.%${searchTerm}%`
         );
       }
 
       const { data, error } = await query;
 
-      if (error) throw error;
+      if (error) {
+        console.error('Supabase error:', error);
+        throw error;
+      }
+
       setStudents(data || []);
     } catch (error) {
       console.error('Error fetching students:', error);

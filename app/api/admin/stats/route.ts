@@ -29,7 +29,7 @@ export async function GET() {
       { count: assignmentsCount },
     ] = await Promise.all([
       supabase
-        .from('profiles')
+        .from('user_roles')
         .select('*', { count: 'exact', head: true })
         .eq('role', 'student'),
       supabase

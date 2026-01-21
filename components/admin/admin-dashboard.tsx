@@ -83,7 +83,7 @@ export function AdminDashboard({
   return (
     <div className="flex min-h-screen">
       {/* Sidebar */}
-      <div className="w-64 bg-white border-r border-gray-200 p-6">
+      <div className="w-70 bg-white border-r border-gray-200 p-6">
         <div className="space-y-6">
           <div className="flex items-center space-x-2">
             <div className="h-8 w-8 rounded-full bg-[#D8C4FB] flex items-center justify-center">
