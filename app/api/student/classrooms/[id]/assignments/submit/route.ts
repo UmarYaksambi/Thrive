@@ -25,30 +25,34 @@ export async function POST(
     const { assignment_id, file_url } = body;
     let { ocr_text } = body;
 
-    // Trigger OCR if it's an image and ocr_text isn't provided
+    // Trigger OCR if it's an image or PDF and ocr_text isn't provided
     const isImage = /\.(jpg|jpeg|png|webp)$/i.test(
       file_url
     );
-    if (isImage && !ocr_text) {
+    const isPDF = /\.pdf$/i.test(file_url);
+
+    if ((isImage || isPDF) && !ocr_text) {
       try {
         const genAI = new GoogleGenerativeAI(
           process.env.GEMINI_API_KEY!
         );
         const model = genAI.getGenerativeModel({
-          model: 'gemini-1.5-flash',
+          model: 'gemini-2.0-flash-exp',
         });
 
         const imageResp = await fetch(file_url);
         const imageData = await imageResp.arrayBuffer();
 
         const result = await model.generateContent([
-          'Extract all handwritten or printed text from this image. Only return the extracted text, no explanations.',
+          'Extract all handwritten or printed text from this file. Only return the extracted text, no explanations.',
           {
             inlineData: {
               data: Buffer.from(imageData).toString(
                 'base64'
               ),
-              mimeType: 'image/jpeg', // Fallback, could check headers
+              mimeType: isPDF
+                ? 'application/pdf'
+                : 'image/jpeg',
             },
           },
         ]);
@@ -57,7 +61,6 @@ export async function POST(
         ocr_text = response.text();
       } catch (ocrError) {
         console.error('Auto-OCR Failed:', ocrError);
-        // We don't fail the whole submission if OCR fails, just log it
       }
     }
 
