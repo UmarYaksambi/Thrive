@@ -1,8 +1,8 @@
 if (!self.define) {
   let e,
     s = {};
-  const a = (a, i) => (
-    (a = new URL(a + '.js', i).href),
+  const a = (a, t) => (
+    (a = new URL(a + '.js', t).href),
     s[a] ||
       new Promise((s) => {
         if ('document' in self) {
@@ -20,7 +20,7 @@ if (!self.define) {
         return e;
       })
   );
-  self.define = (i, t) => {
+  self.define = (t, i) => {
     const c =
       e ||
       ('document' in self
@@ -30,9 +30,9 @@ if (!self.define) {
     if (s[c]) return;
     let n = {};
     const r = (e) => a(e, c),
-      o = { module: { uri: c }, exports: n, require: r };
-    s[c] = Promise.all(i.map((e) => o[e] || r(e))).then(
-      (e) => (t(...e), n)
+      d = { module: { uri: c }, exports: n, require: r };
+    s[c] = Promise.all(t.map((e) => d[e] || r(e))).then(
+      (e) => (i(...e), n)
     );
   };
 }
@@ -43,14 +43,6 @@ define(['./workbox-00a24876'], function (e) {
     e.clientsClaim(),
     e.precacheAndRoute(
       [
-        {
-          url: '/_next/static/DKf-5Bb93e-sBZeirzCD6/_buildManifest.js',
-          revision: 'f7874da9d73f5c90d1da04aa1e141fa0',
-        },
-        {
-          url: '/_next/static/DKf-5Bb93e-sBZeirzCD6/_ssgManifest.js',
-          revision: 'b6652df95db52feb4daf4eca35380933',
-        },
         {
           url: '/_next/static/chunks/1486-62588752925f87f9.js',
           revision: '62588752925f87f9',
@@ -288,12 +280,12 @@ define(['./workbox-00a24876'], function (e) {
           revision: 'ee8f58461402e82e',
         },
         {
-          url: '/_next/static/chunks/app/login/page-f779affacb73ac33.js',
-          revision: 'f779affacb73ac33',
+          url: '/_next/static/chunks/app/login/page-a66de505bf2fd9e6.js',
+          revision: 'a66de505bf2fd9e6',
         },
         {
-          url: '/_next/static/chunks/app/page-417fc886512e3886.js',
-          revision: '417fc886512e3886',
+          url: '/_next/static/chunks/app/page-5b4e348987dc52b6.js',
+          revision: '5b4e348987dc52b6',
         },
         {
           url: '/_next/static/chunks/app/planner/page-6f974495749ea126.js',
@@ -360,8 +352,8 @@ define(['./workbox-00a24876'], function (e) {
           revision: '5d3c5cff17ca562c',
         },
         {
-          url: '/_next/static/css/bb17718c8e1a300c.css',
-          revision: 'bb17718c8e1a300c',
+          url: '/_next/static/css/73a6271bdca91085.css',
+          revision: '73a6271bdca91085',
         },
         {
           url: '/_next/static/media/62c97acc3aa63787-s.p.woff2',
@@ -374,6 +366,14 @@ define(['./workbox-00a24876'], function (e) {
         {
           url: '/_next/static/media/aa5f74293546f6d0-s.woff2',
           revision: '930b65138a24195edf55d50337220605',
+        },
+        {
+          url: '/_next/static/xaJIPCalkLmyZDfr4emQ4/_buildManifest.js',
+          revision: 'f7874da9d73f5c90d1da04aa1e141fa0',
+        },
+        {
+          url: '/_next/static/xaJIPCalkLmyZDfr4emQ4/_ssgManifest.js',
+          revision: 'b6652df95db52feb4daf4eca35380933',
         },
         {
           url: '/favicon.ico',
@@ -429,7 +429,7 @@ define(['./workbox-00a24876'], function (e) {
               request: e,
               response: s,
               event: a,
-              state: i,
+              state: t,
             }) =>
               s && 'opaqueredirect' === s.type
                 ? new Response(s.body, {
