@@ -264,5 +264,149 @@
         }
       }
     ]
+  },
+  {
+    "id": "356014eb-f31b-412b-8744-44131543aabe",
+    "title": "Computer Networks Fundamentals",
+    "description": "This course provides an introduction to the foundational concepts of computer networks, covering topics such as network architecture, protocols, and basic troubleshooting. It is designed for beginners who have basic knowledge of TCP and OSI models.",
+    "category": "Computer Science",
+    "level": "Beginner",
+    "imageUrl": "/course-images/356014eb-f31b-412b-8744-44131543aabe.jpg",
+    "startDate": "2026-01-21T06:53:43.052Z",
+    "progress": 0,
+    "completedLessons": 0,
+    "totalLessons": 6,
+    "colorCode": "#ff5734",
+    "modules": [
+      {
+        "id": "2b5331db-69ca-4ef9-a35d-d1b0b2407a30",
+        "title": "Introduction to Computer Networks",
+        "duration": "1h 30m",
+        "lessons": [
+          {
+            "id": "6ee0cc25-47ca-48be-ae08-9a6e2fd3f711",
+            "title": "Overview of Computer Networks",
+            "duration": "15 min",
+            "type": "video",
+            "completed": false,
+            "videoUrl": "https://www.youtube.com/results?search_query=Overview%20of%20Computer%20Networks%20Computer%20Networks%20tutorial",
+            "notes": ""
+          },
+          {
+            "id": "88aa0d06-4326-47b0-9a6d-5c9c1abc1621",
+            "title": "Types of Networks",
+            "duration": "20 min",
+            "type": "video",
+            "completed": false,
+            "videoUrl": "https://www.youtube.com/results?search_query=Types%20of%20Networks%20Computer%20Networks%20tutorial",
+            "notes": ""
+          }
+        ],
+        "quiz": {
+          "id": "187a2ee6-9c3f-4a07-a8aa-a1cabe23c5cc",
+          "title": "Module Quiz",
+          "questions": [
+            {
+              "question": "What is the purpose of a network protocol?",
+              "options": [
+                "A. Encryption",
+                "B. Data Transmission",
+                "C. Error Correction",
+                "D. Data Storage"
+              ],
+              "answer": "B"
+            }
+          ],
+          "completed": false,
+          "score": 0
+        }
+      },
+      {
+        "id": "ddc207c1-6aaf-4656-9cf0-6d8ca753d8cb",
+        "title": "Networking Devices and Protocols",
+        "duration": "1h 45m",
+        "lessons": [
+          {
+            "id": "7591e305-385b-4369-b25e-7098befa9feb",
+            "title": "Understanding Routers and Switches",
+            "duration": "25 min",
+            "type": "video",
+            "completed": false,
+            "videoUrl": "https://www.youtube.com/results?search_query=Understanding%20Routers%20and%20Switches%20Computer%20Networks%20tutorial",
+            "notes": ""
+          },
+          {
+            "id": "c9038810-43bb-4630-bf36-c08dc7b079fd",
+            "title": "Introduction to TCP/IP Protocol",
+            "duration": "30 min",
+            "type": "video",
+            "completed": false,
+            "videoUrl": "https://www.youtube.com/results?search_query=Introduction%20to%20TCP%2FIP%20Protocol%20Computer%20Networks%20tutorial",
+            "notes": ""
+          }
+        ],
+        "quiz": {
+          "id": "f92a89fc-18bc-487b-a1b0-bacab333afee",
+          "title": "Module Quiz",
+          "questions": [
+            {
+              "question": "What is the primary function of a router?",
+              "options": [
+                "A. Forwarding Data Packets",
+                "B. Filtering Network Traffic",
+                "C. Storing Data",
+                "D. Managing User Authentication"
+              ],
+              "answer": "A"
+            }
+          ],
+          "completed": false,
+          "score": 0
+        }
+      },
+      {
+        "id": "9ba2d27b-677a-4f90-8382-962d7c1b1f25",
+        "title": "Network Security and Troubleshooting",
+        "duration": "1h 40m",
+        "lessons": [
+          {
+            "id": "6eded97d-ff3c-4a9e-8de1-e52dc9ac6f15",
+            "title": "Basic Network Security Measures",
+            "duration": "30 min",
+            "type": "video",
+            "completed": false,
+            "videoUrl": "https://www.youtube.com/results?search_query=Basic%20Network%20Security%20Measures%20Computer%20Networks%20tutorial",
+            "notes": ""
+          },
+          {
+            "id": "62e765f5-ece3-45ed-a240-c5a7e3857e58",
+            "title": "Troubleshooting Common Network Issues",
+            "duration": "35 min",
+            "type": "video",
+            "completed": false,
+            "videoUrl": "https://www.youtube.com/results?search_query=Troubleshooting%20Common%20Network%20Issues%20Computer%20Networks%20tutorial",
+            "notes": ""
+          }
+        ],
+        "quiz": {
+          "id": "eacd6c5f-1818-4474-baee-b7b7b1adb0ca",
+          "title": "Module Quiz",
+          "questions": [
+            {
+              "question": "What is a common method for securing a wireless network?",
+              "options": [
+                "A. MAC Filtering",
+                "B. Port Forwarding",
+                "C. Ping Sweeping",
+                "D. VLAN Configuration"
+              ],
+              "answer": "A"
+            }
+          ],
+          "completed": false,
+          "score": 0
+        }
+      }
+    ]
   }
 ]

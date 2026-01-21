@@ -4,7 +4,6 @@ import { useState, useEffect } from 'react';
 import { Sidebar } from '@/components/sidebar';
 import { Topbar } from '@/components/topbar';
 import Link from 'next/link';
-// Correct import based on your setup
 import { Course } from '@/lib/server/courseStore'; 
 import { Chatbot } from '@/components/ui/chatbot'; 
 import { 
@@ -12,7 +11,6 @@ import {
   TrendingUp, BarChart2, X, Activity, Calendar, Zap, Loader2
 } from 'lucide-react';
 
-// PDF Imports
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 
@@ -22,11 +20,7 @@ export default function DashboardPage() {
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState('All');
   const [stats, setStats] = useState({ avgScore: 0, overallCompletion: 0 });
-  
-  // Track which images are currently being generated to show specific loaders
   const [generatingImages, setGeneratingImages] = useState<Set<string>>(new Set());
-
-  // Modal State
   const [selectedCourse, setSelectedCourse] = useState<Course | null>(null);
 
   // --- 1. FETCH DATA & INIT ---
@@ -35,17 +29,28 @@ export default function DashboardPage() {
       try {
         // Fetch Courses
         const courseRes = await fetch('/api/courses');
-        const courseData = await courseRes.json();
+        const rawData = await courseRes.json();
+        
+        // --- DEFENSIVE CHECK: Ensure data is an array ---
+        const courseData = Array.isArray(rawData) ? rawData : [];
+        
+        if (!Array.isArray(rawData)) {
+            console.warn("API returned non-array data:", rawData);
+        }
+
         setCourses(courseData);
         
-        // Trigger Auto-Generation logic
-        checkAndGenerateImages(courseData);
+        // Trigger Auto-Generation logic only if we have valid courses
+        if (courseData.length > 0) {
+            checkAndGenerateImages(courseData);
+        }
 
-        // Fetch Calendar Results for Stats
+        // Fetch Stats
         const syncRes = await fetch('/api/calendar/sync');
-        const { results } = await syncRes.json();
+        const syncData = await syncRes.json();
+        const results = Array.isArray(syncData.results) ? syncData.results : [];
 
-        // Calculate Stats
+        // Calculate Stats (Safe reduction)
         const totalProgress = courseData.reduce((acc: number, c: any) => acc + (c.progress || 0), 0);
         const overallCompletion = courseData.length > 0 ? Math.round(totalProgress / courseData.length) : 0;
         const totalScore = results.reduce((acc: number, r: any) => acc + r.score, 0);
@@ -54,6 +59,7 @@ export default function DashboardPage() {
         setStats({ avgScore, overallCompletion });
       } catch (error) {
         console.error('Failed to fetch dashboard data:', error);
+        setCourses([]); // Fallback to empty to prevent crash
       } finally {
         setLoading(false);
       }
@@ -63,16 +69,27 @@ export default function DashboardPage() {
 
   // --- 2. IMAGE GENERATION LOGIC ---
   const checkAndGenerateImages = async (coursesToCheck: Course[]) => {
+    if (!Array.isArray(coursesToCheck)) return;
+
     coursesToCheck.forEach(async (course) => {
-      // Logic: Generate if missing, if it's a remote URL (http), or if it's explicitly a placeholder
-      // We want all images to eventually be local paths (starting with /course-images or /default_pics)
-      const needsLocal = 
+      
+      // 1. STRICT CHECK: Is the image ALREADY local?
+      // Checks if the URL points to our local public folders
+      const isLocalFile = 
+        course.imageUrl && (
+          course.imageUrl.startsWith('/course-images/') || 
+          course.imageUrl.startsWith('/default_pics/')
+        );
+
+      // 2. CONDITION: Only generate if it is NOT local AND is (missing OR external URL OR placeholder)
+      const needsGeneration = !isLocalFile && (
         !course.imageUrl || 
         course.imageUrl.startsWith('http') || 
-        course.imageUrl.includes('placeholder');
+        course.imageUrl.includes('placeholder')
+      );
       
-      if (needsLocal) {
-        // Prevent duplicate calls
+      if (needsGeneration) {
+        // Prevent duplicate calls in this session
         if (generatingImages.has(course.id)) return;
 
         setGeneratingImages(prev => new Set(prev).add(course.id));
@@ -91,13 +108,13 @@ export default function DashboardPage() {
           const data = await res.json();
           
           if (data.success && data.imageUrl) {
-            // Update state live with new local URL and timestamp to force refresh
+            // Update state live
             setCourses(prev => prev.map(c => 
               c.id === course.id ? { ...c, imageUrl: `${data.imageUrl}?t=${Date.now()}` } : c
             ));
           }
         } catch (error) {
-          console.error(`Failed to gen image for ${course.title}`);
+          console.error(`Failed to check/gen image for ${course.title}`);
         } finally {
           setGeneratingImages(prev => {
             const next = new Set(prev);
@@ -117,7 +134,6 @@ export default function DashboardPage() {
 
       const doc = new jsPDF();
 
-      // Header
       doc.setFontSize(22);
       doc.setTextColor(21, 19, 19);
       doc.text('Student Performance Report', 14, 20);
@@ -127,22 +143,23 @@ export default function DashboardPage() {
       doc.text(`Generated: ${new Date().toLocaleDateString()}`, 14, 28);
       doc.text(`Student ID: ${data.studentId || 'LEARNER-001'}`, 14, 33);
 
-      // Summary Table
       autoTable(doc, {
         startY: 40,
         head: [['Courses Enrolled', 'Completed', 'Avg Quiz Score']],
-        body: [[data.summary.totalCourses, data.summary.completedCourses, `${data.summary.averageTestScore}%`]],
+        body: [[data.summary?.totalCourses || 0, data.summary?.completedCourses || 0, `${data.summary?.averageTestScore || 0}%`]],
         theme: 'grid',
         headStyles: { fillColor: [21, 19, 19] }
       });
 
-      // Course Details
       doc.text('Detailed Course Progress', 14, (doc as any).lastAutoTable.finalY + 15);
       
+      // Safe check for data.courses being array
+      const reportCourses = Array.isArray(data.courses) ? data.courses : [];
+
       autoTable(doc, {
         startY: (doc as any).lastAutoTable.finalY + 20,
         head: [['Course Title', 'Category', 'Progress', 'Status']],
-        body: data.courses.map((c: any) => [c.title, c.category, c.progress, c.status]),
+        body: reportCourses.map((c: any) => [c.title, c.category, c.progress, c.status]),
         styles: { fontSize: 9 },
         headStyles: { fillColor: [21, 19, 19] }
       });
@@ -155,12 +172,13 @@ export default function DashboardPage() {
   };
 
   // --- 4. VIEW HELPERS ---
-  const filteredCourses = filter === 'All' 
-    ? courses 
-    : courses.filter((c) => c.category === filter);
+  const filteredCourses = Array.isArray(courses) 
+    ? (filter === 'All' ? courses : courses.filter((c) => c.category === filter))
+    : [];
 
-  const nextLessons = courses
+  const nextLessons = Array.isArray(courses) ? courses
     .map((course) => {
+      if (!course.modules) return null; // Safety check
       const activeModule = course.modules.find((m) =>
         m.lessons.some((l) => !l.completed)
       );
@@ -176,7 +194,7 @@ export default function DashboardPage() {
       };
     })
     .filter((item) => item !== null)
-    .slice(0, 5);
+    .slice(0, 5) : [];
 
   if (loading) {
     return (
@@ -194,8 +212,6 @@ export default function DashboardPage() {
       <Sidebar />
       <div className="ml-20">
         <Topbar userName="Learner" />
-
-        {/* --- LEVITATING CHATBOT --- */}
         <Chatbot />
 
         <main className="p-8 relative">
@@ -268,7 +284,6 @@ export default function DashboardPage() {
                   <Link href={`/course/${course.id}`} className="block h-full">
                     <div className="bg-white rounded-3xl p-6 shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all cursor-pointer h-full flex flex-col">
                       
-                      {/* Header */}
                       <div className="flex justify-between items-start mb-4">
                         <span className="px-3 py-1 bg-gray-100 rounded-full text-xs font-bold text-gray-600">
                           {course.category}
@@ -306,7 +321,6 @@ export default function DashboardPage() {
                              className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                              loading="lazy"
                              onError={(e) => {
-                               // Fallback to placeholder immediately on error
                                e.currentTarget.src = '/placeholder.jpg';
                              }}
                            />
@@ -317,7 +331,6 @@ export default function DashboardPage() {
                         {course.title}
                       </h3>
 
-                      {/* Progress */}
                       <div className="mt-auto pt-4">
                         <div className="flex justify-between text-sm text-gray-500 mb-2">
                           <span className="flex items-center gap-1"><TrendingUp size={14}/> Progress</span>
@@ -390,7 +403,6 @@ export default function DashboardPage() {
               </div>
             </div>
 
-            {/* Recommendation Card */}
             <div className="bg-[#151313] rounded-3xl p-8 text-white shadow-sm flex flex-col justify-between relative overflow-hidden">
                <div className="absolute top-0 right-0 w-32 h-32 bg-[#ff5734] rounded-full blur-[60px] opacity-20"></div>
               <div>

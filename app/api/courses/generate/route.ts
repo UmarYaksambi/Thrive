@@ -112,7 +112,7 @@ export async function POST(req: Request) {
 
     // --- STEP 2: Generate Image Prompt (Gemini) ---
     const model = genAI.getGenerativeModel({
-      model: 'gemini-pro',
+      model: 'gemini-2.5-flash-image',
     });
     const imagePromptQuery = `Describe a minimal, high-quality, 3D abstract digital art background image for a course titled "${aiData.title}". 
     The image should represent the concept of ${topic}. 
