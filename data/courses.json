@@ -42,22 +42,12 @@
           "questions": [
             {
               "question": "What is a primary key?",
-              "options": [
-                "A",
-                "B",
-                "C",
-                "D"
-              ],
+              "options": ["A", "B", "C", "D"],
               "answer": "A"
             },
             {
               "question": "What is database normalization?",
-              "options": [
-                "A",
-                "B",
-                "C",
-                "D"
-              ],
+              "options": ["A", "B", "C", "D"],
               "answer": "B"
             }
           ],
@@ -95,22 +85,12 @@
           "questions": [
             {
               "question": "What is query optimization?",
-              "options": [
-                "A",
-                "B",
-                "C",
-                "D"
-              ],
+              "options": ["A", "B", "C", "D"],
               "answer": "B"
             },
             {
               "question": "Why is indexing important for databases?",
-              "options": [
-                "A",
-                "B",
-                "C",
-                "D"
-              ],
+              "options": ["A", "B", "C", "D"],
               "answer": "A"
             }
           ],
@@ -126,7 +106,7 @@
     "description": "Overcome stage fright and lead with confidence.",
     "category": "Psychology",
     "level": "Advanced",
-    "imageUrl": "/course-images/3.png",
+    "imageUrl": "/default_pics/purple.jpg",
     "startDate": "2026-01-23T09:00:00.000Z",
     "progress": 0,
     "totalLessons": 10,
@@ -169,7 +149,7 @@
     "description": "Learn the art of storytelling, character development, and world-building.",
     "category": "Marketing",
     "level": "Beginner",
-    "imageUrl": "/course-images/1.png",
+    "imageUrl": "/default_pics/yellow.jpg",
     "startDate": "2026-01-19T09:00:00.000Z",
     "progress": 45,
     "totalLessons": 12,
@@ -228,7 +208,7 @@
     "description": "Master vector graphics, pen tool, and digital art composition.",
     "category": "Computer Science",
     "level": "Intermediate",
-    "imageUrl": "/course-images/2.png",
+    "imageUrl": "/default_pics/purple.jpg",
     "startDate": "2026-01-21T09:00:00.000Z",
     "progress": 10,
     "totalLessons": 24,

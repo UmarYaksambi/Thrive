@@ -66,12 +66,14 @@ export async function PATCH(
       });
 
     const supabase = await createClient();
+    const body = await request.json();
     const {
       submission_id,
       grade,
       teacher_feedback,
       status,
-    } = await request.json();
+      ocr_text,
+    } = body;
 
     // Verify user is teacher of this classroom
     const { data: isTeacher } = await supabase
@@ -85,13 +87,17 @@ export async function PATCH(
     if (!isTeacher)
       return new NextResponse('Forbidden', { status: 403 });
 
+    const updateData: any = {};
+    if (grade !== undefined) updateData.grade = grade;
+    if (teacher_feedback !== undefined)
+      updateData.teacher_feedback = teacher_feedback;
+    if (status !== undefined) updateData.status = status;
+    if (ocr_text !== undefined)
+      updateData.ocr_text = ocr_text;
+
     const { data, error } = await supabase
       .from('assignment_submissions')
-      .update({
-        grade,
-        teacher_feedback,
-        status: status || 'graded',
-      })
+      .update(updateData)
       .eq('id', submission_id)
       .select()
       .single();

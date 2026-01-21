@@ -28,6 +28,7 @@ import {
   ExternalLink,
   Calendar,
   Shield,
+  FileUp,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -128,6 +129,8 @@ export function ClassroomManagement({
     useState<any | null>(null);
   const [loadingSubmissions, setLoadingSubmissions] =
     useState(false);
+  const [isProcessingOCR, setIsProcessingOCR] =
+    useState(false);
 
   const [newClassName, setNewClassName] = useState('');
   const [newClassDescription, setNewClassDescription] =
@@ -142,6 +145,7 @@ export function ClassroomManagement({
   const [feedback, setFeedback] = useState('');
   const [submittingGrade, setSubmittingGrade] =
     useState(false);
+  const [isOCRingTest, setIsOCRingTest] = useState(false);
 
   // Add Resource Form State
   const [newResource, setNewResource] = useState({
@@ -592,6 +596,107 @@ export function ClassroomManagement({
       console.error('Error grading submission:', error);
     } finally {
       setSubmittingGrade(false);
+    }
+  };
+
+  const handleRetryOCR = async () => {
+    if (!gradingSubmission?.file_url) return;
+    setIsProcessingOCR(true);
+    try {
+      const response = await fetch('/api/ocr', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          fileUrl: gradingSubmission.file_url,
+        }),
+      });
+      const result = await response.json();
+      if (response.ok && result.text) {
+        // Update the submission locally
+        setGradingSubmission({
+          ...gradingSubmission,
+          ocr_text: result.text,
+        });
+
+        // Also save it to the DB
+        await fetch(
+          `/api/teacher/classrooms/${selectedClassroom?.id}/submissions`,
+          {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              submission_id: gradingSubmission.id,
+              ocr_text: result.text,
+            }),
+          }
+        );
+      } else {
+        alert(result.error || 'OCR failed');
+      }
+    } catch (error) {
+      console.error('OCR retry failed:', error);
+    } finally {
+      setIsProcessingOCR(false);
+    }
+  };
+
+  const handleTestOCR = async (file: File) => {
+    if (!file) return;
+    setIsOCRingTest(true);
+    try {
+      // 1. Upload to temporary storage or just send as base64 to a specialized prompt
+      const reader = new FileReader();
+      reader.onload = async () => {
+        const base64Data = (reader.result as string).split(
+          ','
+        )[1];
+        const isPDF = file.type === 'application/pdf';
+
+        const response = await fetch(
+          '/api/tests/generate/ocr',
+          {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              fileData: base64Data,
+              mimeType:
+                file.type ||
+                (isPDF ? 'application/pdf' : 'image/jpeg'),
+            }),
+          }
+        );
+
+        const result = await response.json();
+        if (response.ok && result.questions) {
+          // Merge with existing questions or replace if empty
+          const newQuestions = result.questions.map(
+            (q: any) => ({
+              question: q.question || '',
+              options: q.options || ['', '', '', ''],
+              correctAnswer:
+                q.answer || q.correctAnswer || '',
+            })
+          );
+
+          setNewTest((prev) => ({
+            ...prev,
+            questions:
+              prev.questions[0].question === ''
+                ? newQuestions
+                : [...prev.questions, ...newQuestions],
+          }));
+        } else {
+          alert(
+            result.error ||
+              'Failed to parse test from image'
+          );
+        }
+        setIsOCRingTest(false);
+      };
+      reader.readAsDataURL(file);
+    } catch (error) {
+      console.error('Test OCR failed:', error);
+      setIsOCRingTest(false);
     }
   };
 
@@ -1294,6 +1399,50 @@ export function ClassroomManagement({
               </div>
 
               <div className="space-y-6">
+                <div className="flex items-center justify-between p-4 bg-purple-50 rounded-2xl border border-purple-100">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 bg-white rounded-xl flex items-center justify-center text-[#D8C4FB] shadow-sm">
+                      <FileUp className="w-5 h-5" />
+                    </div>
+                    <div>
+                      <p className="text-sm font-bold text-[#151313]">
+                        Smart Question Import
+                      </p>
+                      <p className="text-[10px] text-purple-600 font-bold uppercase tracking-wider">
+                        Upload Image/PDF of a test
+                      </p>
+                    </div>
+                  </div>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    disabled={isOCRingTest}
+                    onClick={() =>
+                      document
+                        .getElementById('test-ocr-upload')
+                        ?.click()
+                    }
+                    className="bg-white hover:bg-white/80 text-[#151313] font-bold rounded-xl shadow-sm h-10 px-4"
+                  >
+                    {isOCRingTest ? (
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                    ) : (
+                      'Select File'
+                    )}
+                  </Button>
+                  <input
+                    id="test-ocr-upload"
+                    type="file"
+                    className="hidden"
+                    accept="image/*,application/pdf"
+                    onChange={(e) => {
+                      const file = e.target.files?.[0];
+                      if (file) handleTestOCR(file);
+                    }}
+                  />
+                </div>
+
                 <div className="flex items-center justify-between">
                   <h4 className="font-black text-[#151313] uppercase tracking-widest text-xs">
                     Questions ({newTest.questions.length})
@@ -1591,19 +1740,56 @@ export function ClassroomManagement({
                           </div>
                         )}
 
-                        {gradingSubmission.ocr_text && (
-                          <div className="space-y-3">
-                            <div className="flex items-center justify-between">
-                              <h6 className="text-[10px] font-black text-gray-400 uppercase tracking-widest">
-                                AI Text Extraction
-                              </h6>
-                              <Badge className="bg-[#D8C4FB]/20 text-[#151313] border-none text-[9px]">
-                                GEMINI OCR
-                              </Badge>
-                            </div>
-                            <div className="bg-white p-5 rounded-2xl border border-gray-100 italic text-gray-600 text-sm whitespace-pre-wrap max-h-60 overflow-y-auto leading-relaxed shadow-inner">
-                              {gradingSubmission.ocr_text}
-                            </div>
+                        <div className="flex items-center justify-between mb-3">
+                          <h6 className="text-[10px] font-black text-gray-400 uppercase tracking-widest flex items-center gap-2">
+                            AI Text Extraction
+                            {isProcessingOCR && (
+                              <Loader2 className="w-3 h-3 animate-spin" />
+                            )}
+                          </h6>
+                          <div className="flex gap-2">
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              className="h-6 text-[9px] font-bold text-[#D8C4FB] hover:text-[#C2AAFB] p-0"
+                              onClick={handleRetryOCR}
+                              disabled={isProcessingOCR}
+                            >
+                              <RefreshCw
+                                className={cn(
+                                  'w-3 h-3 mr-1',
+                                  isProcessingOCR &&
+                                    'animate-spin'
+                                )}
+                              />
+                              RETRY OCR
+                            </Button>
+                            <Badge className="bg-[#D8C4FB]/20 text-[#151313] border-none text-[9px]">
+                              GEMINI OCR
+                            </Badge>
+                          </div>
+                        </div>
+                        {gradingSubmission.ocr_text ? (
+                          <div className="bg-white p-5 rounded-2xl border border-gray-100 italic text-gray-600 text-sm whitespace-pre-wrap max-h-60 overflow-y-auto leading-relaxed shadow-inner">
+                            {gradingSubmission.ocr_text}
+                          </div>
+                        ) : (
+                          <div className="bg-gray-50/50 p-6 rounded-2xl border border-dashed border-gray-200 text-center">
+                            <p className="text-xs text-gray-400 font-medium italic">
+                              {isProcessingOCR
+                                ? 'Processing file contents...'
+                                : 'No text extracted yet.'}
+                            </p>
+                            {!isProcessingOCR && (
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                className="mt-3 border-[#D8C4FB] text-[#151313] font-bold rounded-full h-8 px-4 text-[10px]"
+                                onClick={handleRetryOCR}
+                              >
+                                RUN OCR NOW
+                              </Button>
+                            )}
                           </div>
                         )}
                       </div>

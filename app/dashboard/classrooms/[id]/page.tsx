@@ -698,7 +698,10 @@ export default function ClassroomDetailPage({
 
                 <button
                   onClick={handleSubmitAssignment}
-                  disabled={isSubmitting || !assignmentUrl}
+                  disabled={
+                    isSubmitting ||
+                    (!assignmentUrl && !selectedFile)
+                  }
                   className="w-full bg-[#151313] text-white py-4 rounded-2xl font-bold text-lg hover:opacity-90 transition-all shadow-xl shadow-black/10 disabled:opacity-50 flex items-center justify-center gap-2"
                 >
                   {isSubmitting ? (
