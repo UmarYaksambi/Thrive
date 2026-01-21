@@ -1,25 +1,17 @@
 import { NextResponse } from 'next/server';
-import {
-  getCourseById,
-  updateCourse,
-} from '@/lib/server/courseStore';
+import { getCourseById, updateCourse } from '@/lib/server/courseStore';
 
-export const runtime = 'nodejs';
-
+// Next.js 15+ requires params to be awaited in dynamic routes
 export async function GET(
   req: Request,
   { params }: { params: Promise<{ id: string }> }
 ) {
   const { id } = await params;
-
   const course = await getCourseById(id);
+  
   if (!course) {
-    return NextResponse.json(
-      { error: 'Not found' },
-      { status: 404 }
-    );
+    return NextResponse.json({ error: 'Not found' }, { status: 404 });
   }
-
   return NextResponse.json(course);
 }
 
@@ -30,6 +22,7 @@ export async function PATCH(
   const { id } = await params;
   const body = await req.json();
 
+  // Logic to recalculate progress if modules are updated
   let updatedData = { ...body };
 
   if (body.modules) {
@@ -46,10 +39,7 @@ export async function PATCH(
 
     updatedData.totalLessons = total;
     updatedData.completedLessons = completed;
-    updatedData.progress =
-      total === 0
-        ? 0
-        : Math.round((completed / total) * 100);
+    updatedData.progress = total === 0 ? 0 : Math.round((completed / total) * 100);
   }
 
   const updatedCourse = await updateCourse(id, updatedData);

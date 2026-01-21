@@ -1,33 +1,76 @@
 import { NextResponse } from 'next/server';
 import { GoogleGenAI } from "@google/genai";
-import { updateCourse, getCourseById } from '@/lib/server/courseStore'; 
-import fs from 'fs-extra';
+import { updateCourse, getCourseById, saveCourse } from '@/lib/server/courseStore'; 
+import { INITIAL_COURSES } from '@/lib/initial-data'; // <--- IMPORT THIS
+import fs from 'fs/promises';
 import path from 'path';
 
-// Initialize the new GenAI client
+// Initialize GenAI
 const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
 
-export async function POST(req: Request) {
+// --- HELPER: GET RANDOM DEFAULT IMAGE ---
+async function assignRandomDefaultImage(courseId: string): Promise<string | null> {
   try {
-    const { courseId, title, category } = await req.json();
+    const defaultsDir = path.join(process.cwd(), 'public', 'default_pics');
+    
+    // Check if folder exists
+    try {
+      await fs.access(defaultsDir);
+    } catch {
+      console.warn("⚠️ 'public/default_pics' folder not found.");
+      return '/placeholder.jpg';
+    }
 
-    // 1. Prepare the Prompt
+    const files = await fs.readdir(defaultsDir);
+    const validImages = files.filter(file => /\.(jpg|jpeg|png|webp)$/i.test(file));
+
+    if (validImages.length === 0) return '/placeholder.jpg';
+
+    const randomImage = validImages[Math.floor(Math.random() * validImages.length)];
+    const publicUrl = `/default_pics/${randomImage}`;
+
+    // PERSISTENCE FIX:
+    // If we assign a default image, we must ensure the course exists in the DB
+    let course = await getCourseById(courseId);
+    
+    if (course) {
+        // It's in the DB, just update
+        await updateCourse(courseId, { imageUrl: publicUrl });
+    } else {
+        // It's a Dummy Course not in DB yet. Find it and Save it.
+        const dummyCourse = INITIAL_COURSES.find(c => c.id === courseId);
+        if (dummyCourse) {
+            await saveCourse({ ...dummyCourse, imageUrl: publicUrl });
+        }
+    }
+
+    return publicUrl;
+  } catch (error) {
+    console.error("Error assigning default image:", error);
+    return null;
+  }
+}
+
+export async function POST(req: Request) {
+  const { courseId, title, category } = await req.json();
+
+  try {
+    // 1. Prepare Prompt
     const imagePrompt = `Create a high-quality, minimalist 3D abstract digital art cover image for a course titled "${title}" in the category of "${category}". No text. Cinematic lighting.`;
 
-    // 2. Call Google GenAI (Imagen/Gemini Model)
-    // Note: Ensure your API Key has access to the specific model you want to use.
-    // 'imagen-3.0-generate-001' is standard for images, but I'm using your requested model string.
+    // 2. Generate
     const response = await ai.models.generateContent({
-      model: 'imagen-3.0-generate-001', // Or 'gemini-2.0-flash-exp' if available for images
+      model: 'gemini-2.5-flash-image', 
       contents: {
         parts: [{ text: imagePrompt }]
+      },
+      config: {
+        responseModalities: ["IMAGE"] 
       }
     });
 
     let imageBuffer: Buffer | null = null;
 
-    // 3. Extract Image Data from Response
-    // The structure depends on the specific model response, handling standard inlineData
     const candidate = response.candidates?.[0];
     if (candidate?.content?.parts) {
       for (const part of candidate.content.parts) {
@@ -42,27 +85,45 @@ export async function POST(req: Request) {
       throw new Error("No image data received from Gemini API");
     }
 
-    // 4. Save to Public Folder
+    // 3. Save Image Locally
     const publicDir = path.join(process.cwd(), 'public', 'course-images');
-    await fs.ensureDir(publicDir);
+    await fs.mkdir(publicDir, { recursive: true });
     
-    const fileName = `${courseId}.png`; // Saving as PNG
+    const fileName = `${courseId}.png`; 
     const filePath = path.join(publicDir, fileName);
     
-    await fs.writeFile(filePath, imageBuffer as unknown as Uint8Array);
+    await fs.writeFile(filePath, new Uint8Array(imageBuffer));
     const localUrl = `/course-images/${fileName}`;
 
-    // 5. Update Database
-    // Check if course exists first (handle dummy vs real)
-    const course = await getCourseById(courseId);
+    // 4. UPDATE DATABASE (CRITICAL FIX)
+    let course = await getCourseById(courseId);
+
     if (course) {
-      await updateCourse(courseId, { imageUrl: localUrl });
+        // Case A: Course already exists in DB (User generated). Update it.
+        await updateCourse(courseId, { imageUrl: localUrl });
+    } else {
+        // Case B: Course is a Dummy/Initial course not yet in DB.
+        // We must fetch the full object from INITIAL_COURSES and SAVE it to DB
+        // so this change persists.
+        const dummyCourse = INITIAL_COURSES.find(c => c.id === courseId);
+        if (dummyCourse) {
+            await saveCourse({ ...dummyCourse, imageUrl: localUrl });
+        } else {
+            console.warn(`Course ${courseId} not found in DB or Initial Data.`);
+        }
     }
 
     return NextResponse.json({ success: true, imageUrl: localUrl });
 
-  } catch (error) {
-    console.error("Gemini Image Gen Failed:", error);
-    return NextResponse.json({ error: 'Image generation failed' }, { status: 500 });
+  } catch (error: any) {
+    console.warn("⚠️ AI Generation failed, switching to default pics:", error.message || error);
+
+    const fallbackUrl = await assignRandomDefaultImage(courseId);
+    
+    return NextResponse.json({ 
+      success: true, 
+      imageUrl: fallbackUrl, 
+      note: "Used fallback image from default_pics" 
+    });
   }
 }

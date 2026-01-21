@@ -1,1 +1,268 @@
-[]
+[
+  {
+    "id": "4340f19b-acc2-4efc-823a-d6fc64ad5752",
+    "title": "DBMS Fundamentals",
+    "description": "This course covers the fundamental concepts of Database Management Systems, including data modeling, normalization, and query optimization.",
+    "category": "Computer Science",
+    "level": "Intermediate (Bridge gaps in knowledge)",
+    "imageUrl": "/course-images/4340f19b-acc2-4efc-823a-d6fc64ad5752.jpg",
+    "startDate": "2026-01-21T02:48:13.031Z",
+    "progress": 50,
+    "completedLessons": 2,
+    "totalLessons": 4,
+    "colorCode": "#ff5734",
+    "modules": [
+      {
+        "id": "85fd71a5-8fa8-43a8-9209-bc6200505283",
+        "title": "Introduction to DBMS",
+        "duration": "1h 30m",
+        "lessons": [
+          {
+            "id": "6af4ddd6-8738-4c64-9a02-e0ddc88d1b5f",
+            "title": "Overview of DBMS",
+            "duration": "15 min",
+            "type": "video",
+            "completed": false,
+            "videoUrl": "https://www.youtube.com/results?search_query=Overview%20of%20DBMS%20DBMS%20tutorial",
+            "notes": ""
+          },
+          {
+            "id": "02db5f7a-5694-479b-b220-3920ba3d2d6e",
+            "title": "Data Modeling",
+            "duration": "20 min",
+            "type": "video",
+            "completed": false,
+            "videoUrl": "https://www.youtube.com/results?search_query=Data%20Modeling%20DBMS%20tutorial",
+            "notes": ""
+          }
+        ],
+        "quiz": {
+          "id": "0bcb48a0-cfc0-4fac-a9be-8c70fd9fd5b9",
+          "title": "Module Quiz",
+          "questions": [
+            {
+              "question": "What is a primary key?",
+              "options": [
+                "A",
+                "B",
+                "C",
+                "D"
+              ],
+              "answer": "A"
+            },
+            {
+              "question": "What is database normalization?",
+              "options": [
+                "A",
+                "B",
+                "C",
+                "D"
+              ],
+              "answer": "B"
+            }
+          ],
+          "completed": false,
+          "score": 0
+        }
+      },
+      {
+        "id": "7770f31b-cc9e-4fcd-9e48-9c81bf6c7a90",
+        "title": "Query Optimization",
+        "duration": "1h 45m",
+        "lessons": [
+          {
+            "id": "b7d5e85c-5f26-4a31-acb2-40c096c0b52d",
+            "title": "Query Execution Plan",
+            "duration": "20 min",
+            "type": "video",
+            "completed": true,
+            "videoUrl": "https://www.youtube.com/results?search_query=Query%20Execution%20Plan%20DBMS%20tutorial",
+            "notes": ""
+          },
+          {
+            "id": "c93d50f4-13f8-4ca0-a960-e1b69581fd08",
+            "title": "Indexing Strategies",
+            "duration": "25 min",
+            "type": "video",
+            "completed": true,
+            "videoUrl": "https://www.youtube.com/results?search_query=Indexing%20Strategies%20DBMS%20tutorial",
+            "notes": ""
+          }
+        ],
+        "quiz": {
+          "id": "7c3bae2b-4f23-48de-b2cc-c15188c1ffe7",
+          "title": "Module Quiz",
+          "questions": [
+            {
+              "question": "What is query optimization?",
+              "options": [
+                "A",
+                "B",
+                "C",
+                "D"
+              ],
+              "answer": "B"
+            },
+            {
+              "question": "Why is indexing important for databases?",
+              "options": [
+                "A",
+                "B",
+                "C",
+                "D"
+              ],
+              "answer": "A"
+            }
+          ],
+          "completed": false,
+          "score": 0
+        }
+      }
+    ]
+  },
+  {
+    "id": "3",
+    "title": "Public Speaking and Leadership",
+    "description": "Overcome stage fright and lead with confidence.",
+    "category": "Psychology",
+    "level": "Advanced",
+    "imageUrl": "/course-images/3.png",
+    "startDate": "2026-01-23T09:00:00.000Z",
+    "progress": 0,
+    "totalLessons": 10,
+    "completedLessons": 0,
+    "colorCode": "#a8d8ea",
+    "modules": [
+      {
+        "id": "93644537-c944-490a-b7b3-815e8561f832",
+        "title": "Module 1: Stage Presence",
+        "duration": "50m",
+        "lessons": [
+          {
+            "id": "36915e27-6d1d-45ad-95f1-247ba5c7c7e6",
+            "title": "Body Language Secrets",
+            "duration": "25m",
+            "type": "video",
+            "completed": false
+          },
+          {
+            "id": "2baa1b3d-d259-4231-bae6-e7a9383560c6",
+            "title": "Voice Modulation",
+            "duration": "25m",
+            "type": "video",
+            "completed": false
+          }
+        ],
+        "quiz": {
+          "id": "488300e4-1f4c-45cc-a70a-0636bfddb0e1",
+          "title": "Non-Verbal Comm. Test",
+          "completed": false,
+          "score": 0,
+          "questions": []
+        }
+      }
+    ]
+  },
+  {
+    "id": "1",
+    "title": "Creative Writing for Beginners",
+    "description": "Learn the art of storytelling, character development, and world-building.",
+    "category": "Marketing",
+    "level": "Beginner",
+    "imageUrl": "/course-images/1.png",
+    "startDate": "2026-01-19T09:00:00.000Z",
+    "progress": 45,
+    "totalLessons": 12,
+    "completedLessons": 5,
+    "colorCode": "#fccc42",
+    "modules": [
+      {
+        "id": "4b0c8e18-ac27-429f-957f-a552e7e08f56",
+        "title": "Module 1: The Hero's Journey",
+        "duration": "45m",
+        "lessons": [
+          {
+            "id": "b69998cc-3346-488b-a88f-2d2b5e24a0d6",
+            "title": "The Call to Adventure",
+            "duration": "20m",
+            "type": "video",
+            "completed": true,
+            "videoUrl": ""
+          },
+          {
+            "id": "9dfd8c60-0e95-48af-acbd-e9849c74a3a5",
+            "title": "Refusal of the Call",
+            "duration": "25m",
+            "type": "video",
+            "completed": true,
+            "videoUrl": ""
+          }
+        ],
+        "quiz": {
+          "id": "303dee9f-f4f4-4730-96f0-4a069d44cc9f",
+          "title": "Archetypes Assessment",
+          "completed": true,
+          "score": 85,
+          "questions": []
+        }
+      },
+      {
+        "id": "3fa06d85-75af-4bae-9356-2147fc45c6ee",
+        "title": "Module 2: Character Arcs",
+        "duration": "1h",
+        "lessons": [
+          {
+            "id": "98632c91-6a8d-44a5-8733-7a0fe0a02a8e",
+            "title": "Creating Flaws",
+            "duration": "30m",
+            "type": "video",
+            "completed": false
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "2",
+    "title": "Digital Illustration with Adobe Illustrator",
+    "description": "Master vector graphics, pen tool, and digital art composition.",
+    "category": "Computer Science",
+    "level": "Intermediate",
+    "imageUrl": "/course-images/2.png",
+    "startDate": "2026-01-21T09:00:00.000Z",
+    "progress": 10,
+    "totalLessons": 24,
+    "completedLessons": 2,
+    "colorCode": "#be94f5",
+    "modules": [
+      {
+        "id": "8f0d6b4a-369e-43ca-a1b9-653b0f1ddea9",
+        "title": "Module 1: Vector Basics",
+        "duration": "1h 15m",
+        "lessons": [
+          {
+            "id": "63936e3c-31bb-4729-8618-ef025b4824ce",
+            "title": "Understanding Paths",
+            "duration": "45m",
+            "type": "video",
+            "completed": true
+          },
+          {
+            "id": "46c14fb3-a9cd-4e28-b46e-0032e206569a",
+            "title": "The Pen Tool Mastery",
+            "duration": "30m",
+            "type": "video",
+            "completed": false
+          }
+        ],
+        "quiz": {
+          "id": "b7ab0c85-7487-4e71-af7f-2d3daf9d2e88",
+          "title": "Vector Tools Quiz",
+          "completed": false,
+          "score": 0,
+          "questions": []
+        }
+      }
+    ]
+  }
+]

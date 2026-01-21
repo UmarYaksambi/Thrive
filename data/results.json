@@ -1,0 +1,96 @@
+[
+  {
+    "id": "e1732dc7-1e90-46f1-a34e-6048956995a6",
+    "courseId": "4340f19b-acc2-4efc-823a-d6fc64ad5752",
+    "moduleId": "7770f31b-cc9e-4fcd-9e48-9c81bf6c7a90",
+    "studentId": "Learner",
+    "score": 0,
+    "totalQuestions": 5,
+    "dateTaken": "2026-01-21T02:50:00.491Z",
+    "answers": [
+      {
+        "questionId": "1",
+        "questionText": "What is query optimization?",
+        "selectedAnswer": "The process of evaluating a query",
+        "correctAnswer": "The process of improving the performance of a query",
+        "isCorrect": false
+      },
+      {
+        "questionId": "2",
+        "questionText": "Which of the following is a common optimization technique?",
+        "selectedAnswer": "Aggregation",
+        "correctAnswer": "Indexing",
+        "isCorrect": false
+      },
+      {
+        "questionId": "3",
+        "questionText": "What is the purpose of query rewriting?",
+        "selectedAnswer": "To create complex queries",
+        "correctAnswer": "To optimize and simplify queries",
+        "isCorrect": false
+      },
+      {
+        "questionId": "4",
+        "questionText": "What is the role of query plan in query optimization?",
+        "selectedAnswer": "To analyze the query",
+        "correctAnswer": "To optimize the query",
+        "isCorrect": false
+      },
+      {
+        "questionId": "5",
+        "questionText": "What is the benefit of using parameterized queries for optimization?",
+        "selectedAnswer": "Faster query execution",
+        "correctAnswer": "Improved security",
+        "isCorrect": false
+      }
+    ],
+    "feedback": "Review the material and try again."
+  },
+  {
+    "id": "76733315-69ff-44b6-be6e-cf03234707b0",
+    "courseId": "1",
+    "moduleId": "4b0c8e18-ac27-429f-957f-a552e7e08f56",
+    "studentId": "Learner",
+    "score": 60,
+    "totalQuestions": 5,
+    "dateTaken": "2026-01-21T02:58:57.328Z",
+    "answers": [
+      {
+        "questionId": "1",
+        "questionText": "What is the first stage of the hero's journey?",
+        "selectedAnswer": "A. Call to Adventure",
+        "correctAnswer": "A. Call to Adventure",
+        "isCorrect": true
+      },
+      {
+        "questionId": "2",
+        "questionText": "Who is often the mentor in the hero's journey?",
+        "selectedAnswer": "A. A wise old man or woman",
+        "correctAnswer": "A. A wise old man or woman",
+        "isCorrect": true
+      },
+      {
+        "questionId": "3",
+        "questionText": "What is the ordeal in the hero's journey?",
+        "selectedAnswer": "A. The final battle",
+        "correctAnswer": "B. A major crisis or test",
+        "isCorrect": false
+      },
+      {
+        "questionId": "4",
+        "questionText": "What comes after the hero's successful ordeal?",
+        "selectedAnswer": "A. The Return with the Elixir",
+        "correctAnswer": "A. The Return with the Elixir",
+        "isCorrect": true
+      },
+      {
+        "questionId": "5",
+        "questionText": "In the hero's journey, what is the 'supernatural aid'?",
+        "selectedAnswer": "A. A magical weapon",
+        "correctAnswer": "C. A mentor or external guide",
+        "isCorrect": false
+      }
+    ],
+    "feedback": "Review the material and try again."
+  }
+]

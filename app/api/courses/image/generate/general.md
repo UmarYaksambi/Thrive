@@ -1,0 +1,1 @@
+await fs.writeFile(filePath, imageBuffer as unknown as Uint8Array);
