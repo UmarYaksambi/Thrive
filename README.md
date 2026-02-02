@@ -1,12 +1,11 @@
 # Thrive 🚀
 
 > **An open-source, offline-first learning platform built to democratize education.**  
-> Thrive is a multilingual learning platform that provides students with *personalized learning paths* and *curated open-source resources*. It uses a *hint-based AI tutor*, *conversational learning*, and *offline access* to make quality learning simple, accessible, and effective for everyone.
+> Thrive is a multilingual learning platform that provides students with _personalized learning paths_ and _curated open-source resources_. It uses a _hint-based AI tutor_, _conversational learning_, and _offline access_ to make quality learning simple, accessible, and effective for everyone.
 
 ---
 
 [💚 Live Platform](https://thrive-learn.vercel.app)
-
 
 ## 🌍 Why Thrive?
 
@@ -15,6 +14,7 @@ Access to quality education should not depend on bandwidth, geography, or langua
 **Thrive** is built to close that gap.
 
 In regions with unreliable internet or limited resources, Thrive enables:
+
 - 📶 **Seamless offline learning**
 - 🌐 **Multilingual education**
 - 🧠 **Personalized, AI-driven instruction**
@@ -31,11 +31,11 @@ Whether you're a student learning independently or a school managing hundreds of
 Thrive doesn’t just host content — it **creates structured learning paths**.
 
 - **Custom Curriculum Generation**  
-  Input a topic (e.g. *“Advanced Game Theory”*) and receive a fully structured course:
+  Input a topic (e.g. _“Advanced Game Theory”_) and receive a fully structured course:
   - Modules
   - Lessons
   - Quizzes  
-  Automatically tailored to the learner’s level.
+    Automatically tailored to the learner’s level.
 
 - **AI-Generated Visuals**  
   Each course gets a unique, cinematic 3D cover image generated using **Google Gemini / Imagen**, ensuring a modern and engaging interface.
@@ -75,7 +75,7 @@ A powerful dashboard for educators.
 - **Student Management**  
   View rosters, remove students, and manage enrollment.
 
-- **Progress Monitoring** *(Coming Soon)*  
+- **Progress Monitoring** _(Coming Soon)_  
   Track quiz performance, lesson completion, and mastery trends.
 
 ---
@@ -119,6 +119,7 @@ A community-driven knowledge hub.
 - 📝 Articles & Blogs
 
 **Features**
+
 - Admin-moderated submissions
 - Difficulty, language, and media-type filters
 - Scalable for institutional use
@@ -129,15 +130,15 @@ A community-driven knowledge hub.
 
 Thrive is built with performance, scalability, and developer experience in mind.
 
-| Layer | Technology | Purpose |
-|------|-----------|---------|
-| **Framework** | **Next.js (App Router)** | SSR, API routes, RSC |
-| **Language** | **TypeScript** | End-to-end type safety |
-| **Styling** | **Tailwind CSS** | Custom design system |
-| **Database & Auth** | **Supabase (PostgreSQL)** | Auth, DB, Storage |
-| **AI (Logic)** | **OpenAI (GPT-4)** | Planner & Tutor |
-| **AI (Visuals)** | **Google Gemini / Imagen** | Course artwork |
-| **Icons** | **Lucide React** | Consistent UI |
+| Layer               | Technology                 | Purpose                |
+| ------------------- | -------------------------- | ---------------------- |
+| **Framework**       | **Next.js (App Router)**   | SSR, API routes, RSC   |
+| **Language**        | **TypeScript**             | End-to-end type safety |
+| **Styling**         | **Tailwind CSS**           | Custom design system   |
+| **Database & Auth** | **Supabase (PostgreSQL)**  | Auth, DB, Storage      |
+| **AI (Logic)**      | **OpenAI (GPT-4)**         | Planner & Tutor        |
+| **AI (Visuals)**    | **Google Gemini / Imagen** | Course artwork         |
+| **Icons**           | **Lucide React**           | Consistent UI          |
 
 ---
 
@@ -155,12 +156,14 @@ Thrive is built with performance, scalability, and developer experience in mind.
 ### Installation
 
 1. **Clone the repository**
+
 ```bash
 git clone https://github.com/YOUR_USERNAME/thrive.git
 cd thrive
 ```
 
 2. **Install dependencies**
+
 ```bash
 npm install
 ```
@@ -225,10 +228,10 @@ thrive/
 
 We welcome contributions from:
 
-* Developers
-* Educators
-* Translators
-* Accessibility advocates
+- Developers
+- Educators
+- Translators
+- Accessibility advocates
 
 ### How to contribute
 
@@ -250,10 +253,8 @@ See `LICENSE` for details.
 
 **Built with ❤️ for accessible education**
 
-
 [GitHub](https://github.com/UmarYaksambi/thrive) •
 [Website](https://thrive-learn.vercel.app) •
 [Donate](https://https://buymeacoffee.com/UmarYaksambi)
 
 </div>
-
