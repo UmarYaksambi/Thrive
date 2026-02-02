@@ -4,14 +4,6 @@ import { useState, useEffect } from 'react';
 import { Sidebar } from '@/components/sidebar';
 import { Topbar } from '@/components/topbar';
 import Link from 'next/link';
-<<<<<<< HEAD
-import { Course } from '@/lib/server/courseStore'; 
-import { Chatbot } from '@/components/ui/chatbot'; 
-import { 
-  Play, Clock, MoreHorizontal, PieChart, Award, Download, 
-  TrendingUp, BarChart2, X, Activity, Calendar, Zap, Loader2
-=======
-// Correct import based on your setup
 import { Course } from '@/lib/server/courseStore';
 import { Chatbot } from '@/components/ui/chatbot';
 import {
@@ -28,7 +20,6 @@ import {
   Calendar,
   Zap,
   Loader2,
->>>>>>> c9533bb3483ad1ba3a2aed747774efc92ac2d1bb
 } from 'lucide-react';
 
 import jsPDF from 'jspdf';
@@ -39,11 +30,6 @@ export default function DashboardPage() {
   const [courses, setCourses] = useState<Course[]>([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState('All');
-<<<<<<< HEAD
-  const [stats, setStats] = useState({ avgScore: 0, overallCompletion: 0 });
-  const [generatingImages, setGeneratingImages] = useState<Set<string>>(new Set());
-  const [selectedCourse, setSelectedCourse] = useState<Course | null>(null);
-=======
   const [stats, setStats] = useState({
     avgScore: 0,
     overallCompletion: 0,
@@ -57,7 +43,6 @@ export default function DashboardPage() {
   // Modal State
   const [selectedCourse, setSelectedCourse] =
     useState<Course | null>(null);
->>>>>>> c9533bb3483ad1ba3a2aed747774efc92ac2d1bb
 
   // --- 1. FETCH DATA & INIT ---
   useEffect(() => {
@@ -66,44 +51,30 @@ export default function DashboardPage() {
         // Fetch Courses
         const courseRes = await fetch('/api/courses');
         const rawData = await courseRes.json();
-        
+
         // --- DEFENSIVE CHECK: Ensure data is an array ---
-        const courseData = Array.isArray(rawData) ? rawData : [];
-        
+        const courseData = Array.isArray(rawData)
+          ? rawData
+          : [];
         if (!Array.isArray(rawData)) {
-            console.warn("API returned non-array data:", rawData);
+          console.warn(
+            'API returned non-array data:',
+            rawData
+          );
         }
 
         setCourses(courseData);
-<<<<<<< HEAD
-        
-        // Trigger Auto-Generation logic only if we have valid courses
-        if (courseData.length > 0) {
-            checkAndGenerateImages(courseData);
-        }
-=======
 
-        // Trigger Auto-Generation logic
+        // Trigger Auto-Generation logic for missing covers
         checkAndGenerateImages(courseData);
->>>>>>> c9533bb3483ad1ba3a2aed747774efc92ac2d1bb
 
         // Fetch Stats
         const syncRes = await fetch('/api/calendar/sync');
         const syncData = await syncRes.json();
-        const results = Array.isArray(syncData.results) ? syncData.results : [];
+        const results = Array.isArray(syncData.results)
+          ? syncData.results
+          : [];
 
-<<<<<<< HEAD
-        // Calculate Stats (Safe reduction)
-        const totalProgress = courseData.reduce((acc: number, c: any) => acc + (c.progress || 0), 0);
-        const overallCompletion = courseData.length > 0 ? Math.round(totalProgress / courseData.length) : 0;
-        const totalScore = results.reduce((acc: number, r: any) => acc + r.score, 0);
-        const avgScore = results.length > 0 ? Math.round(totalScore / results.length) : 0;
-
-        setStats({ avgScore, overallCompletion });
-      } catch (error) {
-        console.error('Failed to fetch dashboard data:', error);
-        setCourses([]); // Fallback to empty to prevent crash
-=======
         // Calculate Stats
         const totalProgress = courseData.reduce(
           (acc: number, c: any) => acc + (c.progress || 0),
@@ -113,8 +84,9 @@ export default function DashboardPage() {
           courseData.length > 0
             ? Math.round(totalProgress / courseData.length)
             : 0;
+
         const totalScore = results.reduce(
-          (acc: number, r: any) => acc + r.score,
+          (acc: number, r: any) => acc + (r.score || 0),
           0
         );
         const avgScore =
@@ -128,7 +100,6 @@ export default function DashboardPage() {
           'Failed to fetch dashboard data:',
           error
         );
->>>>>>> c9533bb3483ad1ba3a2aed747774efc92ac2d1bb
       } finally {
         setLoading(false);
       }
@@ -137,44 +108,17 @@ export default function DashboardPage() {
   }, []);
 
   // --- 2. IMAGE GENERATION LOGIC ---
-<<<<<<< HEAD
-  const checkAndGenerateImages = async (coursesToCheck: Course[]) => {
-    if (!Array.isArray(coursesToCheck)) return;
-
-    coursesToCheck.forEach(async (course) => {
-      
-      // 1. STRICT CHECK: Is the image ALREADY local?
-      // Checks if the URL points to our local public folders
-      const isLocalFile = 
-        course.imageUrl && (
-          course.imageUrl.startsWith('/course-images/') || 
-          course.imageUrl.startsWith('/default_pics/')
-        );
-
-      // 2. CONDITION: Only generate if it is NOT local AND is (missing OR external URL OR placeholder)
-      const needsGeneration = !isLocalFile && (
-        !course.imageUrl || 
-        course.imageUrl.startsWith('http') || 
-        course.imageUrl.includes('placeholder')
-      );
-      
-      if (needsGeneration) {
-        // Prevent duplicate calls in this session
-=======
   const checkAndGenerateImages = async (
     coursesToCheck: Course[]
   ) => {
     coursesToCheck.forEach(async (course) => {
-      // Logic: Generate if missing, if it's a remote URL (http), or if it's explicitly a placeholder
-      // We want all images to eventually be local paths (starting with /course-images or /default_pics)
+      // Logic: Generate if missing or if it's explicitly a placeholder
       const needsLocal =
         !course.imageUrl ||
         course.imageUrl.startsWith('http') ||
         course.imageUrl.includes('placeholder');
 
       if (needsLocal) {
-        // Prevent duplicate calls
->>>>>>> c9533bb3483ad1ba3a2aed747774efc92ac2d1bb
         if (generatingImages.has(course.id)) return;
 
         setGeneratingImages((prev) =>
@@ -200,16 +144,6 @@ export default function DashboardPage() {
           const data = await res.json();
 
           if (data.success && data.imageUrl) {
-<<<<<<< HEAD
-            // Update state live
-            setCourses(prev => prev.map(c => 
-              c.id === course.id ? { ...c, imageUrl: `${data.imageUrl}?t=${Date.now()}` } : c
-            ));
-          }
-        } catch (error) {
-          console.error(`Failed to check/gen image for ${course.title}`);
-=======
-            // Update state live with new local URL and timestamp to force refresh
             setCourses((prev) =>
               prev.map((c) =>
                 c.id === course.id
@@ -225,7 +159,6 @@ export default function DashboardPage() {
           console.error(
             `Failed to gen image for ${course.title}`
           );
->>>>>>> c9533bb3483ad1ba3a2aed747774efc92ac2d1bb
         } finally {
           setGeneratingImages((prev) => {
             const next = new Set(prev);
@@ -242,7 +175,6 @@ export default function DashboardPage() {
     try {
       const res = await fetch('/api/reports/student');
       const data = await res.json();
-
       const doc = new jsPDF();
 
       doc.setFontSize(22);
@@ -264,10 +196,6 @@ export default function DashboardPage() {
 
       autoTable(doc, {
         startY: 40,
-<<<<<<< HEAD
-        head: [['Courses Enrolled', 'Completed', 'Avg Quiz Score']],
-        body: [[data.summary?.totalCourses || 0, data.summary?.completedCourses || 0, `${data.summary?.averageTestScore || 0}%`]],
-=======
         head: [
           [
             'Courses Enrolled',
@@ -282,23 +210,10 @@ export default function DashboardPage() {
             `${data.summary.averageTestScore}%`,
           ],
         ],
->>>>>>> c9533bb3483ad1ba3a2aed747774efc92ac2d1bb
         theme: 'grid',
         headStyles: { fillColor: [21, 19, 19] },
       });
 
-<<<<<<< HEAD
-      doc.text('Detailed Course Progress', 14, (doc as any).lastAutoTable.finalY + 15);
-      
-      // Safe check for data.courses being array
-      const reportCourses = Array.isArray(data.courses) ? data.courses : [];
-
-      autoTable(doc, {
-        startY: (doc as any).lastAutoTable.finalY + 20,
-        head: [['Course Title', 'Category', 'Progress', 'Status']],
-        body: reportCourses.map((c: any) => [c.title, c.category, c.progress, c.status]),
-=======
-      // Course Details
       doc.text(
         'Detailed Course Progress',
         14,
@@ -318,10 +233,9 @@ export default function DashboardPage() {
         body: data.courses.map((c: any) => [
           c.title,
           c.category,
-          c.progress,
+          `${c.progress}%`,
           c.status,
         ]),
->>>>>>> c9533bb3483ad1ba3a2aed747774efc92ac2d1bb
         styles: { fontSize: 9 },
         headStyles: { fillColor: [21, 19, 19] },
       });
@@ -334,46 +248,36 @@ export default function DashboardPage() {
   };
 
   // --- 4. VIEW HELPERS ---
-<<<<<<< HEAD
-  const filteredCourses = Array.isArray(courses) 
-    ? (filter === 'All' ? courses : courses.filter((c) => c.category === filter))
-    : [];
-=======
   const filteredCourses =
     filter === 'All'
       ? courses
       : courses.filter((c) => c.category === filter);
->>>>>>> c9533bb3483ad1ba3a2aed747774efc92ac2d1bb
 
-  const nextLessons = Array.isArray(courses) ? courses
-    .map((course) => {
-      if (!course.modules) return null; // Safety check
-      const activeModule = course.modules.find((m) =>
-        m.lessons.some((l) => !l.completed)
-      );
-      const activeLesson = activeModule?.lessons.find(
-        (l) => !l.completed
-      );
-      if (!activeLesson) return null;
-      return {
-        id: activeLesson.id,
-        courseId: course.id,
-        title: activeLesson.title,
-        subtitle: course.title,
-        teacher: 'AI Tutor',
-        duration: activeLesson.duration,
-      };
-    })
-<<<<<<< HEAD
-    .filter((item) => item !== null)
-    .slice(0, 5) : [];
-=======
-    .filter(
-      (item): item is NonNullable<typeof item> =>
-        item !== null
-    )
-    .slice(0, 5);
->>>>>>> c9533bb3483ad1ba3a2aed747774efc92ac2d1bb
+  const nextLessons = Array.isArray(courses)
+    ? courses
+        .map((course) => {
+          if (!course.modules) return null;
+          const activeModule = course.modules.find((m) =>
+            m.lessons.some((l) => !l.completed)
+          );
+          const activeLesson = activeModule?.lessons.find(
+            (l) => !l.completed
+          );
+          if (!activeLesson) return null;
+          return {
+            id: activeLesson.id,
+            courseId: course.id,
+            title: activeLesson.title,
+            subtitle: course.title,
+            duration: activeLesson.duration,
+          };
+        })
+        .filter(
+          (item): item is NonNullable<typeof item> =>
+            item !== null
+        )
+        .slice(0, 5)
+    : [];
 
   if (loading) {
     return (
@@ -394,9 +298,7 @@ export default function DashboardPage() {
       <div className="ml-20">
         <Topbar userName="Learner" />
         <Chatbot />
-
         <main className="p-8 relative">
-          {/* --- METRICS HEADER --- */}
           <div className="mb-8 grid grid-cols-1 md:grid-cols-3 gap-6">
             <div className="bg-[#151313] text-white p-6 rounded-3xl flex items-center justify-between shadow-lg">
               <div>
@@ -411,7 +313,6 @@ export default function DashboardPage() {
                 <PieChart className="text-[#fccc42]" />
               </div>
             </div>
-
             <div className="bg-white p-6 rounded-3xl flex items-center justify-between shadow-sm border border-gray-100">
               <div>
                 <p className="text-gray-500 text-sm font-semibold mb-1">
@@ -427,7 +328,6 @@ export default function DashboardPage() {
                 <Award className="text-[#ff5734]" />
               </div>
             </div>
-
             <button
               onClick={downloadReport}
               className="bg-[#fccc42] hover:bg-[#f4b91a] transition-colors p-6 rounded-3xl flex flex-col justify-center items-start text-left shadow-sm group"
@@ -439,12 +339,11 @@ export default function DashboardPage() {
                 </span>
               </div>
               <p className="text-sm text-[#151313]/80 group-hover:translate-x-1 transition-transform">
-                Download full performance analytics
+                Download full analytics
               </p>
             </button>
           </div>
 
-          {/* --- COURSE FILTERS --- */}
           <div className="mb-8">
             <div className="flex items-center justify-between mb-6">
               <h2 className="text-3xl font-bold text-[#151313]">
@@ -457,23 +356,17 @@ export default function DashboardPage() {
                   'Marketing',
                   'Business',
                   'Psychology',
-                ].map((category) => (
+                ].map((cat) => (
                   <button
-                    key={category}
-                    onClick={() => setFilter(category)}
-                    className={`px-6 py-2 rounded-full font-semibold text-sm transition-colors ${
-                      filter === category
-                        ? 'bg-[#151313] text-white'
-                        : 'bg-white border-2 border-gray-200 text-[#151313] hover:border-[#151313]'
-                    }`}
+                    key={cat}
+                    onClick={() => setFilter(cat)}
+                    className={`px-6 py-2 rounded-full font-semibold text-sm transition-colors ${filter === cat ? 'bg-[#151313] text-white' : 'bg-white border-2 border-gray-200 text-[#151313] hover:border-[#151313]'}`}
                   >
-                    {category}
+                    {cat}
                   </button>
                 ))}
               </div>
             </div>
-
-            {/* --- COURSE GRID --- */}
             <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
               {filteredCourses.map((course) => (
                 <div
@@ -485,16 +378,10 @@ export default function DashboardPage() {
                     className="block h-full"
                   >
                     <div className="bg-white rounded-3xl p-6 shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all cursor-pointer h-full flex flex-col">
-<<<<<<< HEAD
-                      
-=======
-                      {/* Header */}
->>>>>>> c9533bb3483ad1ba3a2aed747774efc92ac2d1bb
                       <div className="flex justify-between items-start mb-4">
                         <span className="px-3 py-1 bg-gray-100 rounded-full text-xs font-bold text-gray-600">
                           {course.category}
                         </span>
-
                         <div className="flex items-center gap-2">
                           <button
                             onClick={(e) => {
@@ -502,37 +389,16 @@ export default function DashboardPage() {
                               e.stopPropagation();
                               setSelectedCourse(course);
                             }}
-                            className="p-2 hover:bg-gray-100 rounded-full text-gray-400 hover:text-[#ff5734] transition-colors relative z-20 group/stat"
+                            className="p-2 hover:bg-gray-100 rounded-full text-gray-400 hover:text-[#ff5734] transition-colors relative z-20"
                           >
                             <BarChart2 className="w-5 h-5" />
                           </button>
-
                           <button className="p-2 hover:bg-gray-100 rounded-full text-gray-400 hover:text-gray-600">
                             <MoreHorizontal className="w-5 h-5" />
                           </button>
                         </div>
                       </div>
-
-                      {/* --- IMAGE DISPLAY --- */}
                       <div className="aspect-video rounded-2xl bg-gray-100 mb-4 overflow-hidden relative">
-<<<<<<< HEAD
-                         {generatingImages.has(course.id) ? (
-                            <div className="w-full h-full flex flex-col items-center justify-center bg-gray-50 text-gray-400 gap-2">
-                               <Loader2 className="w-8 h-8 animate-spin text-[#ff5734]" />
-                               <span className="text-xs font-semibold">Designing Cover...</span>
-                            </div>
-                         ) : (
-                           <img 
-                             src={course.imageUrl || '/placeholder.jpg'} 
-                             alt={course.title} 
-                             className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                             loading="lazy"
-                             onError={(e) => {
-                               e.currentTarget.src = '/placeholder.jpg';
-                             }}
-                           />
-                         )}
-=======
                         {generatingImages.has(course.id) ? (
                           <div className="w-full h-full flex flex-col items-center justify-center bg-gray-50 text-gray-400 gap-2">
                             <Loader2 className="w-8 h-8 animate-spin text-[#ff5734]" />
@@ -549,20 +415,12 @@ export default function DashboardPage() {
                             alt={course.title}
                             className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                             loading="lazy"
-                            onError={(e) => {
-                              // Fallback to placeholder immediately on error
-                              e.currentTarget.src =
-                                '/placeholder.jpg';
-                            }}
                           />
                         )}
->>>>>>> c9533bb3483ad1ba3a2aed747774efc92ac2d1bb
                       </div>
-
                       <h3 className="text-xl font-bold text-[#151313] mb-2 line-clamp-2">
                         {course.title}
                       </h3>
-
                       <div className="mt-auto pt-4">
                         <div className="flex justify-between text-sm text-gray-500 mb-2">
                           <span className="flex items-center gap-1">
@@ -594,7 +452,6 @@ export default function DashboardPage() {
             </div>
           </div>
 
-          {/* --- NEXT LESSONS --- */}
           <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
             <div className="xl:col-span-2 bg-white rounded-3xl p-8 shadow-sm">
               <div className="flex items-center justify-between mb-6">
@@ -608,7 +465,6 @@ export default function DashboardPage() {
                   View full schedule
                 </Link>
               </div>
-
               <div className="space-y-1">
                 <div className="grid grid-cols-12 gap-4 pb-3 border-b border-gray-200 text-sm font-semibold text-gray-500">
                   <div className="col-span-6">Lesson</div>
@@ -617,7 +473,6 @@ export default function DashboardPage() {
                     Duration
                   </div>
                 </div>
-
                 {nextLessons.length > 0 ? (
                   nextLessons.map((lesson) => (
                     <Link
@@ -642,7 +497,7 @@ export default function DashboardPage() {
                           </span>
                         </div>
                         <div className="col-span-2 text-right font-semibold text-[#151313] flex items-center justify-end gap-2 text-sm">
-                          <Clock className="w-4 h-4 text-gray-400" />
+                          <Clock className="w-4 h-4 text-gray-400" />{' '}
                           {lesson.duration}
                         </div>
                       </div>
@@ -650,16 +505,14 @@ export default function DashboardPage() {
                   ))
                 ) : (
                   <div className="py-8 text-center text-gray-500">
-                    <p>
-                      All caught up! No pending lessons.
-                    </p>
+                    All caught up! No pending lessons.
                   </div>
                 )}
               </div>
             </div>
 
             <div className="bg-[#151313] rounded-3xl p-8 text-white shadow-sm flex flex-col justify-between relative overflow-hidden">
-              <div className="absolute top-0 right-0 w-32 h-32 bg-[#ff5734] rounded-full blur-[60px] opacity-20"></div>
+              <div className="absolute top-0 right-0 w-32 h-32 bg-[#ff5734] rounded-full blur-[60px] opacity-20" />
               <div>
                 <div className="mb-6 relative z-10">
                   <h3 className="text-sm font-semibold text-gray-400 mb-4">
@@ -685,10 +538,9 @@ export default function DashboardPage() {
             </div>
           </div>
 
-          {/* --- ANALYTICS MODAL --- */}
           {selectedCourse && (
-            <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 animate-in fade-in duration-200">
-              <div className="bg-white rounded-3xl w-full max-w-2xl overflow-hidden shadow-2xl scale-100 animate-in zoom-in-95 duration-200">
+            <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
+              <div className="bg-white rounded-3xl w-full max-w-2xl overflow-hidden shadow-2xl">
                 <div className="bg-[#151313] p-6 text-white flex items-center justify-between">
                   <div className="flex items-center gap-4">
                     <div className="w-12 h-12 rounded-xl bg-gray-800 overflow-hidden">
